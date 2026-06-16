@@ -41,3 +41,13 @@ def list_entities(limit: int = Query(100, le=300), offset: int = 0,
     with session_scope() as s:
         stmt = select(AdEntity).order_by(AdEntity.id.desc())
         return ser.paginate(s, stmt, limit, offset, ser.ad_entity_dict)
+
+@router.post("/suggestions/generate")
+def generate_suggestions(report_date: date | None = None,
+                        _=Depends(require_roles(Role.MARKETING))):
+    """Claude API ‚ª 4 —v‘f‚Ì’ñˆÄ‚ğ¶¬"""
+    with session_scope() as s:
+        suggestions = advertising_service.generate_ai_suggestions(
+            s, report_date=report_date or date.today()
+        )
+        return suggestions

@@ -139,3 +139,39 @@ def approve_all(session: Session, accept: bool = True) -> int:
         count += 1
     session.flush()  # åŒä¸€ã‚»ãƒƒã‚·ãƒ§ãƒ³å†…ã®å¾Œç¶šSELECTã«åæ˜ ã•ã›ã‚‹ï¼ˆautoflush=Falseã®ãŸã‚ï¼‰
     return count
+
+def generate_ai_suggestions(session: Session, report_date: date) -> dict:
+    """Claude API ‚ğg‚Á‚Ä 4 —v‘f‚Ì’ñˆÄ‚ğ¶¬"""
+    return {"suggestions": []}
+
+def generate_ai_suggestions(session: Session, report_date: date) -> dict:
+    """Claude API ‚ğg‚Á‚Ä 4 —v‘f‚Ì’ñˆÄ‚ğ¶¬
+    - ”„ãÅ‘å‰»
+    - VASIN‘i‹
+    - ƒ}[ƒPƒbƒgƒj[ƒY‘Î‰
+    - ƒ[ƒJ[‰¿’lŒüã
+    """
+    import anthropic
+    integ = get_integrations()
+    
+    # ƒƒgƒŠƒNƒXûW
+    metrics = session.scalars(
+        select(AdMetricSnapshot).where(AdMetricSnapshot.report_date == report_date)
+    )
+    
+    # Claude API ŒÄ‚Ño‚µ
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    response = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=2000,
+        messages=[{
+            "role": "user",
+            "content": f"ˆÈ‰º‚ÌƒƒgƒŠƒNƒX‚ğ•ªÍ‚µ‚ÄA4—v‘f‚Ì’ñˆÄ‚ğ¶¬‚µ‚Ä‚­‚¾‚³‚¢: {metrics}"
+        }]
+    )
+    
+    return {
+        "report_date": report_date.isoformat(),
+        "suggestions": response.content[0].text,
+        "created_at": date.today().isoformat()
+    }
