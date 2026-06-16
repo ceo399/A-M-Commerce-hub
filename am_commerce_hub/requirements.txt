@@ -1,0 +1,20 @@
+sqlalchemy>=2.0
+pydantic>=2.0
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9   # ファイルアップロード(カタログ取込)
+openpyxl>=3.1             # メーカーカタログ(Excel)の取込・テンプレート生成（実行時必須）
+PyJWT>=2.7               # アクセストークン(JWT)
+bcrypt>=4.0              # パスワードハッシュ
+httpx>=0.27             # テスト(TestClient)実行に必要
+alembic>=1.13            # DBマイグレーション（スキーマ版数管理）
+python-dotenv>=1.0      # .env 読み込み
+psycopg[binary]>=3.1    # PostgreSQL ドライバ（本番DB / Docker）
+APScheduler>=3.10,<4    # 定期ジョブ（スケジューラ）
+tzdata                  # スケジューラのタイムゾーン解決（slimイメージ用）
+anthropic>=0.40         # AI（商品情報生成・広告分析）— APIキー設定後に有効化
+# 本番で追加する想定:
+# twilio                 # SMS二段階認証(本番)
+# boto3                  # メール送信(Amazon SES)など
+# pandas                 # 現状はopenpyxl+標準csvで実装。将来必要になれば追加
+# paramiko               # 出荷ハブへのSFTP送信(本番)

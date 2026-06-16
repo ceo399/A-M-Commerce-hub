@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A&M Commerce Hub — ダッシュボード プロトタイプ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mono:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Noto Sans JP",-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#0d0d0d; --panel:#151515; --panel-2:#1b1b1b; --panel-3:#202020;
+  --sidebar-bg:#101010; --topbar-bg:rgba(13,13,13,.86); --glow:rgba(201,168,76,.05);
+  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.16);
+  --text:#ece9e2; --muted:#8c8c86; --faint:#5f5f5a;
+  --gold:#C9A84C; --gold-ink:#C9A84C; --gold-dim:rgba(201,168,76,.14);
+  --blue:#a0b4d0; --blue-dim:rgba(160,180,208,.14);
+  --green:#62b187; --green-dim:rgba(98,177,135,.14);
+  --amber:#d9a441; --amber-dim:rgba(217,164,65,.14);
+  --red:#d56b6b; --red-dim:rgba(213,107,107,.14);
+  --info:#6f9bd1; --info-dim:rgba(111,155,209,.14);
+  --shadow:0 10px 30px rgba(0,0,0,.4);
+}
+[data-theme="light"]{
+  --bg:#f3f1ea; --panel:#ffffff; --panel-2:#f7f5ef; --panel-3:#ece9e0;
+  --sidebar-bg:#fbfaf6; --topbar-bg:rgba(243,241,234,.85); --glow:transparent;
+  --line:rgba(40,38,32,.10); --line-strong:rgba(40,38,32,.18);
+  --text:#26241f; --muted:#6c6a62; --faint:#a09e93;
+  --gold:#C9A84C; --gold-ink:#8a6c16; --gold-dim:rgba(201,168,76,.20);
+  --blue:#4f6a8f; --blue-dim:rgba(79,106,143,.13);
+  --green:#2f8f5e; --green-dim:rgba(47,143,94,.14);
+  --amber:#9c7415; --amber-dim:rgba(201,150,40,.18);
+  --red:#bf463f; --red-dim:rgba(191,70,63,.12);
+  --info:#3a6ea5; --info-dim:rgba(58,110,165,.12);
+  --shadow:0 10px 30px rgba(40,38,32,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(900px 500px at 85% -8%,var(--glow),transparent 60%);}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+
+/* ---------- ログイン ---------- */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;
+  background:radial-gradient(1200px 600px at 50% -10%,rgba(201,168,76,.06),transparent),var(--bg)}
+.login-card{width:380px;max-width:92vw;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:38px 34px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.brand .mark{width:30px;height:30px;border:1.5px solid var(--gold-ink);border-radius:7px;display:grid;place-items:center;color:var(--gold-ink);font-weight:700;font-size:15px}
+.brand .name{font-weight:700;letter-spacing:.04em}
+.login-card h1{font-size:15px;font-weight:500;color:var(--muted);margin:18px 0 22px;letter-spacing:.02em}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase}
+.field input{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:11px 12px;font-family:inherit;font-size:14px}
+.field input:focus{outline:none;border-color:var(--gold)}
+.note-2fa{font-size:12px;color:var(--faint);margin:6px 0 20px;display:flex;gap:7px;align-items:flex-start}
+.btn{border:1px solid var(--line-strong);background:var(--panel-2);color:var(--text);padding:9px 16px;border-radius:8px;font-size:13px;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{border-color:var(--line-strong);background:var(--panel-3)}
+.btn-primary{background:var(--gold);border-color:var(--gold);color:#1a1505;font-weight:700}
+.btn-primary:hover{filter:brightness(1.08);background:var(--gold)}
+.btn-ghost{background:transparent}
+.btn-danger{color:var(--red);border-color:rgba(213,107,107,.3)}
+.btn-danger:hover{background:var(--red-dim)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn-block{width:100%;justify-content:center;padding:11px}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+
+/* ---------- シェル ---------- */
+#app{display:none;min-height:100vh;grid-template-columns:230px 1fr;position:relative;z-index:1}
+.sidebar{background:var(--sidebar-bg);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.sidebar .brand{padding:6px 8px 18px}
+.nav-label{font-size:10px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase;padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;color:var(--muted);font-size:13.5px;border:1px solid transparent;transition:.13s;background:none;width:100%;text-align:left}
+.nav-item:hover{color:var(--text);background:var(--panel)}
+.nav-item.active{color:var(--text);background:var(--panel-2);border-color:var(--line)}
+.nav-item.active .ico{color:var(--gold-ink)}
+.nav-item .ico{width:17px;text-align:center;color:var(--faint);font-size:15px}
+.nav-item .badge{margin-left:auto;background:var(--gold-dim);color:var(--gold-ink);font-size:11px;padding:1px 7px;border-radius:20px;font-family:var(--mono)}
+.sidebar-foot{margin-top:auto;padding:10px;font-size:11px;color:var(--faint);border-top:1px solid var(--line)}
+
+.main-wrap{display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 28px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--topbar-bg);backdrop-filter:blur(8px);z-index:5}
+.topbar h2{font-size:16px;font-weight:700;letter-spacing:.02em}
+.proto-tag{font-size:10px;letter-spacing:.1em;color:var(--gold-ink);border:1px solid var(--gold-ink);border-radius:5px;padding:2px 7px;text-transform:uppercase}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.role-select{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.role-select select{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:6px 9px;font-family:inherit;font-size:12.5px}
+.role-select select:focus{outline:none;border-color:var(--gold)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--gold-dim);color:var(--gold-ink);display:grid;place-items:center;font-size:12px;font-weight:700}
+
+.content{padding:26px 28px 60px;max-width:1280px;width:100%}
+.page-intro{color:var(--muted);font-size:13px;margin:-4px 0 22px}
+
+/* ---------- 部品 ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--gold))}
+.kpi .k-label{font-size:12px;color:var(--muted);letter-spacing:.02em}
+.kpi .k-val{font-size:30px;font-weight:700;font-family:var(--mono);margin-top:8px;letter-spacing:-.01em}
+.kpi .k-sub{font-size:11.5px;color:var(--faint);margin-top:4px}
+.kpi .k-val small{font-size:14px;color:var(--muted);font-weight:400}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.panel-head{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.panel-head h3{font-size:14px;font-weight:700;letter-spacing:.02em}
+.panel-head .ph-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--panel-2);padding:5px 11px;border-radius:20px;transition:.13s}
+.chip:hover{color:var(--text);border-color:var(--line-strong)}
+.chip.active{color:var(--gold-ink);border-color:var(--gold-ink);background:var(--gold-dim)}
+.search{background:var(--panel-2);border:1px solid var(--line);border-radius:7px;color:var(--text);padding:7px 11px;font-family:inherit;font-size:13px;width:230px}
+.search:focus{outline:none;border-color:var(--gold)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;font-weight:500;padding:11px 18px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:13px 18px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:.1s}
+tbody tr:hover{background:var(--panel-2)}
+.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.t-actions{display:flex;gap:7px;justify-content:flex-end}
+.row-alert{background:rgba(213,107,107,.05)}
+.row-alert:hover{background:rgba(213,107,107,.09)}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 9px;border-radius:20px;border:1px solid transparent;white-space:nowrap;font-weight:500}
+.pill .dot{width:6px;height:6px;border-radius:50%}
+.pill.gold{color:var(--gold-ink);background:var(--gold-dim)} .pill.gold .dot{background:var(--gold-ink)}
+.pill.blue{color:var(--blue);background:var(--blue-dim)} .pill.blue .dot{background:var(--blue)}
+.pill.green{color:var(--green);background:var(--green-dim)} .pill.green .dot{background:var(--green)}
+.pill.amber{color:var(--amber);background:var(--amber-dim)} .pill.amber .dot{background:var(--amber)}
+.pill.red{color:var(--red);background:var(--red-dim)} .pill.red .dot{background:var(--red)}
+.pill.info{color:var(--info);background:var(--info-dim)} .pill.info .dot{background:var(--info)}
+.pill.gray{color:var(--muted);background:var(--panel-3)} .pill.gray .dot{background:var(--muted)}
+
+.empty{padding:48px 18px;text-align:center;color:var(--faint);font-size:13px}
+.cap{font-size:11px;color:var(--faint)}
+.lock{font-size:11px;color:var(--faint);display:inline-flex;align-items:center;gap:5px}
+.rationale{color:var(--muted);font-size:12.5px;max-width:340px}
+.acos-bad{color:var(--red);font-weight:600} .acos-good{color:var(--green);font-weight:600} .acos-mid{color:var(--text)}
+.bidchange{font-family:var(--mono);font-size:12.5px}
+.arrow{color:var(--faint)}
+.list-activity{padding:6px 0}
+.activity{display:flex;gap:12px;padding:11px 18px;border-bottom:1px solid var(--line);font-size:13px}
+.activity:last-child{border-bottom:none}
+.activity .a-ico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;background:var(--panel-3);color:var(--muted);font-size:13px}
+.activity .a-time{margin-left:auto;color:var(--faint);font-size:11.5px;font-family:var(--mono);white-space:nowrap}
+.section-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
+@media(max-width:1080px){.kpis{grid-template-columns:repeat(2,1fr)}.section-grid{grid-template-columns:1fr}}
+@media(max-width:720px){#app{grid-template-columns:1fr}.sidebar{display:none}}
+
+/* toast */
+#toasts{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:10px;z-index:60}
+.toast{background:var(--panel-2);border:1px solid var(--line-strong);border-left:3px solid var(--green);border-radius:9px;padding:12px 16px;font-size:13px;min-width:240px;box-shadow:var(--shadow);animation:slidein .25s ease}
+.toast.err{border-left-color:var(--red)}
+@keyframes slidein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bullets{margin:4px 0 0 0;padding-left:16px;color:var(--muted);font-size:12px}
+.bullets li{margin:1px 0}
+.draft-title{font-weight:500}
+</style>
+</head>
+<body>
+
+<!-- ===== ログイン ===== -->
+<div id="login">
+  <div class="login-card">
+    <div class="brand"><div class="mark">A</div><div class="name">A&amp;M Commerce Hub</div></div>
+    <h1>運用ダッシュボード</h1>
+    <div class="field"><label>メールアドレス</label><input id="lg-email" value="md@am-teams.com"></div>
+    <div class="field"><label>パスワード</label><input type="password" value="............"></div>
+    <div class="note-2fa"><span>🔐</span><span>ログイン後、登録済みの方法（メール / SMS）に二段階認証コードを送信します。</span></div>
+    <button class="btn btn-primary btn-block" onclick="enterApp()">ログイン</button>
+    <div class="cap" style="text-align:center;margin-top:16px">プロトタイプ — 実データは接続していません</div>
+  </div>
+</div>
+
+<!-- ===== アプリ ===== -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="mark">A</div><div class="name">Commerce Hub</div></div>
+    <nav id="nav"></nav>
+    <div class="sidebar-foot">プロトタイプ v0.1<br>モックデータで表示中</div>
+  </aside>
+  <div class="main-wrap">
+    <header class="topbar">
+      <h2 id="page-title">ダッシュボード</h2>
+      <span class="proto-tag">Prototype</span>
+      <div class="top-right">
+        <button class="btn btn-sm btn-ghost" id="themeBtn" onclick="toggleTheme()" title="表示テーマ切替">☀︎ ライト</button>
+        <div class="role-select">
+          <span>表示ロール</span>
+          <select id="role" onchange="setRole(this.value)">
+            <option value="admin">管理者</option>
+            <option value="logistics">物流責任者</option>
+            <option value="purchasing">購買担当</option>
+            <option value="merchandising" selected>MD・商品企画</option>
+            <option value="marketing">マーケ責任者</option>
+          </select>
+        </div>
+        <div class="avatar" id="avatar">MD</div>
+      </div>
+    </header>
+    <main class="content" id="main"></main>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<script>
+/* ===================== モックデータ ===================== */
+const TARGET_ACOS = 0.20;
+const ROLE_LABEL = {admin:"管理者",logistics:"物流責任者",purchasing:"購買担当",merchandising:"MD・商品企画",marketing:"マーケ責任者"};
+const APPROVAL_ROLE = {daily_shipment:"logistics",supplier_po:"purchasing",listing:"merchandising",ad_bid:"marketing"};
+const APPROVAL_LABEL = {daily_shipment:"日次出荷承認",supplier_po:"メーカー発注承認",listing:"出品承認",ad_bid:"広告入札承認"};
+const APPROVAL_PILL = {daily_shipment:"info",supplier_po:"amber",listing:"blue",ad_bid:"gold"};
+
+let state = {
+  role:"merchandising", view:"dashboard",
+  approvals:[
+    {id:1,type:"daily_shipment",summary:"PO-DEMO-1001 の即納分（XLRケーブル 6本）出荷承認",ref:"PO-DEMO-1001",time:"08:12"},
+    {id:2,type:"supplier_po",summary:"Cordial へ SKU-CABLE-XLR-3M を 4 発注",ref:"SPO-44",time:"08:12"},
+    {id:3,type:"listing",summary:"出品ドラフト承認: SKU-NEW-A / 新製品A 軽量モデル",ref:"DRAFT-7",time:"09:03"},
+    {id:4,type:"listing",summary:"出品ドラフト承認: SKU-PATCH-05 / パッチケーブル6本セット",ref:"DRAFT-8",time:"09:05"},
+    {id:5,type:"ad_bid",summary:"6/3 の入札提案 3件 一括承認",ref:"ADS-2026-06-03",time:"06:00"},
+    {id:6,type:"daily_shipment",summary:"PO-DEMO-1007 の即納分（パッチケーブル 12本）出荷承認",ref:"PO-DEMO-1007",time:"08:40"},
+  ],
+  inventory:[
+    {sku:"SKU-CABLE-XLR-3M",name:"XLRマイクケーブル 3m",on:25,alloc:6,reorder:10,status:"active"},
+    {sku:"SKU-CABLE-XLR-6M",name:"XLRマイクケーブル 6m",on:8,alloc:6,reorder:10,status:"active"},
+    {sku:"SKU-PATCH-05",name:"パッチケーブル 0.5m 6本セット",on:40,alloc:12,reorder:15,status:"active"},
+    {sku:"SKU-DI-BOX-A",name:"アクティブDIボックス",on:3,alloc:2,reorder:6,status:"active"},
+    {sku:"SKU-NEW-A",name:"新製品A 軽量モデル",on:0,alloc:0,reorder:5,status:"draft"},
+    {sku:"SKU-HPHONE-01",name:"モニターヘッドホン",on:54,alloc:8,reorder:20,status:"active"},
+    {sku:"SKU-OLD-DI-BOX",name:"旧型DIボックス",on:0,alloc:0,reorder:0,status:"discontinued"},
+    {sku:"SKU-STAND-02",name:"マイクスタンド ブーム式",on:17,alloc:3,reorder:8,status:"active"},
+  ],
+  ads:[
+    {id:"KW-001",kw:"xlr ケーブル",imp:5400,clk:120,spend:6800,sales:42000,acos:0.162,action:"increase",bid:45,newbid:52,why:"ACoS 16% は目標を下回り効率的。入札を15%増で露出拡大。"},
+    {id:"KW-002",kw:"マイクケーブル 3m",imp:3100,clk:64,spend:5200,sales:18000,acos:0.289,action:"decrease",bid:60,newbid:51,why:"ACoS 29% が目標20%を超過。入札を15%減でコスト抑制。"},
+    {id:"KW-003",kw:"di ボックス 安い",imp:2200,clk:88,spend:4100,sales:0,acos:null,action:"pause",bid:35,newbid:null,why:"売上ゼロで費用のみ発生。停止を提案。"},
+    {id:"KW-004",kw:"パッチケーブル セット",imp:1800,clk:40,spend:2400,sales:13000,acos:0.185,action:"keep",bid:42,newbid:42,why:"ACoS 18% は目標圏内。現状維持。"},
+    {id:"KW-005",kw:"cordial ケーブル",imp:900,clk:22,spend:1500,sales:9000,acos:0.167,action:"increase",bid:38,newbid:44,why:"ブランド指名で効率良好。入札を15%増。"},
+  ],
+  orders:[
+    {po:"PO-DEMO-1001",status:"partially_backordered",ordered:10,confirmed:6,back:4,amount:18000},
+    {po:"PO-DEMO-1007",status:"ready_to_ship",ordered:12,confirmed:12,back:0,amount:23040},
+    {po:"PO-DEMO-0996",status:"invoiced",ordered:8,confirmed:8,back:0,amount:14400},
+    {po:"PO-DEMO-0994",status:"shipped",ordered:20,confirmed:20,back:0,amount:44000},
+  ],
+  drafts:[
+    {id:"DRAFT-7",sku:"SKU-NEW-A",title:"新製品A 軽量モデル ／ 防水・低ノイズ設計",bullets:["軽量設計で取り回しやすい","生活防水対応","低ノイズ構造"],status:"pending_approval"},
+    {id:"DRAFT-8",sku:"SKU-PATCH-05",title:"パッチケーブル 0.5m 6本セット ／ 省スペースL字プラグ",bullets:["6本セットでお得","省スペースなL字プラグ","信号劣化を抑える設計"],status:"pending_approval"},
+    {id:"DRAFT-5",sku:"SKU-HPHONE-01",title:"モニターヘッドホン ／ 密閉型・折りたたみ",bullets:["正確なモニターサウンド","密閉型で遮音性が高い","折りたたみ式で携帯に便利"],status:"published"},
+  ],
+  activity:[
+    {ico:"✓",txt:"<b>物流責任者</b> が PO-DEMO-0994 の出荷を承認",time:"昨日 17:22"},
+    {ico:"↑",txt:"広告入札を 3件 Ads API へ反映（マーケ責任者 承認）",time:"昨日 06:05"},
+    {ico:"＋",txt:"カタログ取込: 新製品 3件 / 廃盤 1件",time:"6/2 14:10"},
+    {ico:"✓",txt:"<b>MD</b> が SKU-HPHONE-01 を出品承認 → ASIN 付与",time:"6/2 11:48"},
+  ],
+};
+
+const NAV = [
+  {sec:"運用"},
+  {id:"dashboard",label:"ダッシュボード",ico:"◧"},
+  {id:"approvals",label:"承認キュー",ico:"✓",badgeFromApprovals:true},
+  {sec:"在庫・商品"},
+  {id:"inventory",label:"在庫",ico:"▦"},
+  {id:"drafts",label:"出品ドラフト",ico:"❏"},
+  {sec:"受注・広告"},
+  {id:"orders",label:"受注",ico:"⇄"},
+  {id:"ads",label:"広告提案",ico:"◔"},
+];
+const TITLES={dashboard:"ダッシュボード",approvals:"承認キュー",inventory:"在庫",drafts:"出品ドラフト",orders:"受注",ads:"広告提案"};
+
+/* ===================== 共通 ===================== */
+function toggleTheme(){var h=document.documentElement;var n=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',n);document.getElementById('themeBtn').innerHTML=(n==='light'?'☀︎ ライト':'☾ ダーク');}
+function enterApp(){document.getElementById("login").style.display="none";document.getElementById("app").style.display="grid";renderNav();render();}
+function setRole(r){state.role=r;document.getElementById("avatar").textContent={admin:"AD",logistics:"物",purchasing:"購",merchandising:"MD",marketing:"MK"}[r];render();}
+function canAct(type){return state.role==="admin"||state.role===APPROVAL_ROLE[type];}
+function toast(msg,err){const t=document.createElement("div");t.className="toast"+(err?" err":"");t.innerHTML=msg;document.getElementById("toasts").appendChild(t);setTimeout(()=>t.remove(),3200);}
+function jpy(n){return "¥"+Number(n).toLocaleString("ja-JP");}
+function pendingCount(){return state.approvals.length;}
+
+function renderNav(){
+  const nav=document.getElementById("nav");
+  nav.innerHTML=NAV.map(n=>{
+    if(n.sec)return `<div class="nav-label">${n.sec}</div>`;
+    const badge=n.badgeFromApprovals&&pendingCount()?`<span class="badge">${pendingCount()}</span>`:"";
+    return `<button class="nav-item ${state.view===n.id?'active':''}" onclick="navigate('${n.id}')">
+      <span class="ico">${n.ico}</span><span>${n.label}</span>${badge}</button>`;
+  }).join("");
+}
+function navigate(v){state.view=v;document.getElementById("page-title").textContent=TITLES[v];renderNav();render();window.scrollTo(0,0);}
+
+function render(){
+  renderNav();
+  const m=document.getElementById("main");
+  m.innerHTML=({dashboard:viewDashboard,approvals:viewApprovals,inventory:viewInventory,drafts:viewDrafts,orders:viewOrders,ads:viewAds}[state.view])();
+}
+
+/* ===================== 画面: ダッシュボード ===================== */
+function viewDashboard(){
+  const low=state.inventory.filter(i=>i.status==="active"&&(i.on-i.alloc)<=i.reorder).length;
+  const adsPending=state.ads.length;
+  const avgAcos=(()=>{const v=state.ads.filter(a=>a.acos!=null);return v.length?(v.reduce((s,a)=>s+a.acos,0)/v.length):0;})();
+  const kpi=(label,val,sub,color)=>`<div class="kpi" style="--accent:${color}"><div class="k-label">${label}</div><div class="k-val">${val}</div><div class="k-sub">${sub}</div></div>`;
+  return `<p class="page-intro">本日の運用状況サマリ。承認待ち・在庫アラート・広告効率をひと目で確認します。</p>
+  <div class="kpis">
+    ${kpi("承認待ち",pendingCount(),"各責任者の確認が必要","var(--gold)")}
+    ${kpi("在庫アラート",low,"発注点を下回るSKU","var(--red)")}
+    ${kpi("本日の広告提案",adsPending,"AIによる入札・停止案","var(--blue)")}
+    ${kpi("平均ACoS",(avgAcos*100).toFixed(1)+'<small>%</small>',"目標 20% / 売上ありKW","var(--green)")}
+  </div>
+  <div class="section-grid">
+    <div class="panel">
+      <div class="panel-head"><h3>承認待ち（上位）</h3><div class="ph-right"><button class="btn btn-sm" onclick="navigate('approvals')">すべて見る</button></div></div>
+      <table><tbody>
+      ${state.approvals.slice(0,4).map(a=>`<tr><td><span class="pill ${APPROVAL_PILL[a.type]}"><span class="dot"></span>${APPROVAL_LABEL[a.type]}</span></td>
+        <td style="width:100%">${a.summary}</td><td class="num cap">${a.time}</td></tr>`).join("")}
+      </tbody></table>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>最近のアクティビティ</h3></div>
+      <div class="list-activity">
+        ${state.activity.map(a=>`<div class="activity"><div class="a-ico">${a.ico}</div><div>${a.txt}</div><div class="a-time">${a.time}</div></div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ===================== 画面: 承認キュー ===================== */
+let approvalFilter="all";
+function setApprovalFilter(f){approvalFilter=f;render();}
+function decide(id,ok){
+  const a=state.approvals.find(x=>x.id===id);if(!a)return;
+  if(!canAct(a.type)){toast("この承認には別ロールの権限が必要です",true);return;}
+  state.approvals=state.approvals.filter(x=>x.id!==id);
+  toast((ok?"承認しました":"否認しました")+`：${a.ref}`+(ok?" — 後続処理を実行":""));
+  render();
+}
+function viewApprovals(){
+  const types=["all",...Object.keys(APPROVAL_LABEL)];
+  const list=state.approvals.filter(a=>approvalFilter==="all"||a.type===approvalFilter);
+  const chips=types.map(t=>`<button class="chip ${approvalFilter===t?'active':''}" onclick="setApprovalFilter('${t}')">${t==="all"?"すべて":APPROVAL_LABEL[t]}</button>`).join("");
+  const rows=list.map(a=>{
+    const act=canAct(a.type);
+    const actions=act
+      ?`<button class="btn btn-sm btn-primary" onclick="decide(${a.id},true)">承認</button><button class="btn btn-sm btn-danger" onclick="decide(${a.id},false)">否認</button>`
+      :`<span class="lock">🔒 ${ROLE_LABEL[APPROVAL_ROLE[a.type]]}のみ</span>`;
+    return `<tr><td><span class="pill ${APPROVAL_PILL[a.type]}"><span class="dot"></span>${APPROVAL_LABEL[a.type]}</span></td>
+      <td style="width:100%">${a.summary}</td><td class="mono cap">${a.ref}</td><td class="num cap">${a.time}</td>
+      <td><div class="t-actions">${actions}</div></td></tr>`;}).join("");
+  return `<p class="page-intro">承認すると後続処理（出荷→ASN/請求、発注確定、出品実行、入札反映）まで自動で進みます。権限のない種別はロックされます。</p>
+  <div class="panel">
+    <div class="panel-head"><h3>承認待ち <span class="cap">（${list.length}件）</span></h3><div class="ph-right filters">${chips}</div></div>
+    <table><thead><tr><th>種別</th><th>内容</th><th>参照</th><th class="num">時刻</th><th></th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="5"><div class="empty">承認待ちはありません</div></td></tr>`}</tbody></table>
+  </div>`;
+}
+
+/* ===================== 画面: 在庫 ===================== */
+let invSearch="";
+function setInvSearch(v){invSearch=v.toLowerCase();render();setTimeout(()=>{const el=document.getElementById("inv-search");if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},0);}
+function viewInventory(){
+  const sp={active:'<span class="pill green"><span class="dot"></span>販売中</span>',draft:'<span class="pill gray"><span class="dot"></span>下書き</span>',discontinued:'<span class="pill red"><span class="dot"></span>廃盤</span>'};
+  const rows=state.inventory.filter(i=>!invSearch||i.sku.toLowerCase().includes(invSearch)||i.name.toLowerCase().includes(invSearch)).map(i=>{
+    const avail=i.on-i.alloc;const alert=i.status==="active"&&avail<=i.reorder;
+    return `<tr class="${alert?'row-alert':''}"><td class="mono">${i.sku}</td><td style="width:100%">${i.name}</td>
+      <td>${sp[i.status]}</td><td class="num">${i.on}</td><td class="num muted">${i.alloc}</td>
+      <td class="num"><b>${avail}</b></td><td class="num muted">${i.reorder}</td>
+      <td>${alert?'<span class="pill red"><span class="dot"></span>発注点割れ</span>':'<span class="cap">—</span>'}</td></tr>`;}).join("");
+  const lowN=state.inventory.filter(i=>i.status==="active"&&(i.on-i.alloc)<=i.reorder).length;
+  return `<p class="page-intro">物理在庫・引当・引当可能数を一覧。発注点（reorder）を下回るSKUは赤でハイライトします。</p>
+  <div class="panel">
+    <div class="panel-head"><h3>在庫一覧 <span class="cap">（発注点割れ ${lowN}件）</span></h3>
+      <div class="ph-right"><input id="inv-search" class="search" placeholder="SKU・商品名で検索" value="${invSearch}" oninput="setInvSearch(this.value)"></div></div>
+    <table><thead><tr><th>SKU</th><th>商品名</th><th>状態</th><th class="num">物理在庫</th><th class="num">引当</th><th class="num">引当可能</th><th class="num">発注点</th><th>アラート</th></tr></thead>
+    <tbody>${rows||`<tr><td colspan="8"><div class="empty">該当する商品がありません</div></td></tr>`}</tbody></table>
+  </div>`;
+}
+
+/* ===================== 画面: 出品ドラフト ===================== */
+function viewDrafts(){
+  const act=canAct("listing");
+  const sp={pending_approval:'<span class="pill amber"><span class="dot"></span>承認待ち</span>',published:'<span class="pill green"><span class="dot"></span>出品済</span>'};
+  const rows=state.drafts.map(d=>{
+    const actions=d.status!=="pending_approval"?'<span class="cap">—</span>'
+      :(act?`<button class="btn btn-sm" onclick="toast('編集パネルを開く（プロトタイプ）')">編集</button><button class="btn btn-sm btn-primary" onclick="approveDraft('${d.id}')">承認して出品</button>`
+            :`<span class="lock">🔒 MDのみ</span>`);
+    return `<tr><td class="mono">${d.sku}</td><td style="width:100%"><div class="draft-title">${d.title}</div>
+      <ul class="bullets">${d.bullets.map(b=>`<li>${b}</li>`).join("")}</ul></td>
+      <td>${sp[d.status]}</td><td><div class="t-actions">${actions}</div></td></tr>`;}).join("");
+  return `<p class="page-intro">AIが生成した出品タイトル・箇条書き・紹介文の下書き。承認前に編集でき、承認すると Listings API で出品されます。</p>
+  <div class="panel">
+    <div class="panel-head"><h3>出品ドラフト</h3></div>
+    <table><thead><tr><th>SKU</th><th>内容（AI生成）</th><th>状態</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
+function approveDraft(id){if(!canAct("listing")){toast("MDの権限が必要です",true);return;}const d=state.drafts.find(x=>x.id===id);d.status="published";state.approvals=state.approvals.filter(a=>a.ref!==id);toast("承認しました："+d.sku+" — 出品を実行（ASIN付与）");render();}
+
+/* ===================== 画面: 受注 ===================== */
+function viewOrders(){
+  const sp={partially_backordered:'<span class="pill amber"><span class="dot"></span>一部欠品</span>',ready_to_ship:'<span class="pill info"><span class="dot"></span>出荷準備</span>',shipped:'<span class="pill blue"><span class="dot"></span>出荷済</span>',invoiced:'<span class="pill green"><span class="dot"></span>請求済</span>'};
+  const rows=state.orders.map(o=>`<tr><td class="mono">${o.po}</td><td>${sp[o.status]}</td>
+    <td class="num">${o.ordered}</td><td class="num">${o.confirmed}</td>
+    <td class="num">${o.back?`<span class="acos-bad">${o.back}</span>`:'<span class="muted">0</span>'}</td>
+    <td class="num">${jpy(o.amount)}</td></tr>`).join("");
+  return `<p class="page-intro">Amazonベンダーセントラルから取り込んだ発注（PO）。即納分と欠品分（バックオーダー）を自動で振り分けます。</p>
+  <div class="panel"><div class="panel-head"><h3>受注（PO）一覧</h3></div>
+  <table><thead><tr><th>PO番号</th><th>状態</th><th class="num">受注数</th><th class="num">即納</th><th class="num">欠品</th><th class="num">金額</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ===================== 画面: 広告提案 ===================== */
+const ACT_PILL={increase:'<span class="pill green"><span class="dot"></span>増額</span>',decrease:'<span class="pill amber"><span class="dot"></span>減額</span>',pause:'<span class="pill red"><span class="dot"></span>停止</span>',keep:'<span class="pill gray"><span class="dot"></span>維持</span>'};
+function bulkAds(ok){
+  if(!canAct("ad_bid")){toast("マーケ責任者の権限が必要です",true);return;}
+  const n=state.ads.length;state.approvals=state.approvals.filter(a=>a.type!=="ad_bid");
+  toast((ok?`一括承認：入札提案 ${n}件を Ads API へ反映`:`一括否認：提案 ${n}件を却下`));
+}
+function viewAds(){
+  const act=canAct("ad_bid");
+  const acosCell=a=>a.acos==null?'<span class="muted">—</span>':`<span class="${a.acos>TARGET_ACOS?'acos-bad':(a.acos<TARGET_ACOS*0.85?'acos-good':'acos-mid')}">${(a.acos*100).toFixed(1)}%</span>`;
+  const bidCell=a=>a.action==="pause"?'<span class="bidchange">¥'+a.bid+' <span class="arrow">→</span> <span class="acos-bad">停止</span></span>':(a.newbid===a.bid?`<span class="bidchange muted">¥${a.bid}</span>`:`<span class="bidchange">¥${a.bid} <span class="arrow">→</span> <b>¥${a.newbid}</b></span>`);
+  const rows=state.ads.map(a=>`<tr><td>${a.kw}<div class="cap mono">${a.id}</div></td>
+    <td class="num">${a.imp.toLocaleString()}</td><td class="num">${a.clk}</td>
+    <td class="num">${jpy(a.spend)}</td><td class="num">${jpy(a.sales)}</td>
+    <td class="num">${acosCell(a)}</td><td>${ACT_PILL[a.action]}</td><td>${bidCell(a)}</td>
+    <td class="rationale">${a.why}</td></tr>`).join("");
+  const bulk=act
+    ?`<button class="btn btn-sm" onclick="bulkAds(false)">一括否認</button><button class="btn btn-sm btn-primary" onclick="bulkAds(true)">一括承認</button>`
+    :`<span class="lock">🔒 マーケ責任者のみ</span>`;
+  return `<p class="page-intro">日次の広告レポートをAIが分析し、キーワード別に入札の増減・停止を提案します（目標ACoS 20%）。マーケ責任者が一括で承認します。</p>
+  <div class="panel">
+    <div class="panel-head"><h3>入札提案 <span class="cap">2026/06/03 分</span></h3><div class="ph-right">${bulk}</div></div>
+    <table><thead><tr><th>キーワード</th><th class="num">表示</th><th class="num">クリック</th><th class="num">費用</th><th class="num">売上</th><th class="num">ACoS</th><th>アクション</th><th>入札</th><th>根拠（AI）</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+  </div>`;
+}
+</script>
+</body>
+</html>

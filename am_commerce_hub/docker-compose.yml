@@ -1,0 +1,57 @@
+# アプリ + PostgreSQL をまとめて起動する構成。
+# 使い方:  docker compose up --build
+# 停止:    docker compose down       （DBを消すなら -v も付ける）
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-amhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-amhub_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-amhub}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amhub} -d ${POSTGRES_DB:-amhub}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5432:5432"   # ローカル確認用。本番では公開不要
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # アプリ側は service 名 'db' でDBへ接続
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-amhub}:${POSTGRES_PASSWORD:-amhub_pass}@db:5432/${POSTGRES_DB:-amhub}
+      AUTO_CREATE_TABLES: "false"          # スキーマはAlembicが管理（起動時にupgrade）
+      RUN_MIGRATIONS: "true"
+      INTEGRATION_MODE: ${INTEGRATION_MODE:-mock}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      DEV_ECHO_OTP: ${DEV_ECHO_OTP:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+    ports:
+      - "8000:8000"
+
+  scheduler:
+    build: .
+    depends_on:
+      app:
+        condition: service_healthy   # スキーマ作成(app側のマイグレーション)後に起動
+    entrypoint: ["python", "-m", "scripts.scheduler"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-amhub}:${POSTGRES_PASSWORD:-amhub_pass}@db:5432/${POSTGRES_DB:-amhub}
+      AUTO_CREATE_TABLES: "false"
+      INTEGRATION_MODE: ${INTEGRATION_MODE:-mock}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SCHEDULER_TIMEZONE: ${SCHEDULER_TIMEZONE:-Asia/Tokyo}
+      ORDERS_INGEST_CRON: "${ORDERS_INGEST_CRON:-0 * * * *}"
+      ADS_COLLECT_CRON: "${ADS_COLLECT_CRON:-0 6 * * *}"
+      CLEANUP_CRON: "${CLEANUP_CRON:-30 3 * * *}"
+
+volumes:
+  pgdata:
