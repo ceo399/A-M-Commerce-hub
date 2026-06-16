@@ -1,4 +1,4 @@
-﻿?"""??????? v2 API"""
+﻿"""??????? v2 API"""
 from __future__ import annotations
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, Query
