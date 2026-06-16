@@ -1,10 +1,10 @@
-"""SP-APIサンドボックス Vendor Orders 取込アダプタのテスト（httpx MockTransportで模擬）。
+﻿"""SP-API??????? Vendor Orders ???????????httpx MockTransport?????
 
-実資格情報不要。静的サンドボックスの応答を模し、
-1) レスポンス → IncomingPO へのマッピング
-2) サンドボックスホストへの接続
-3) 既存の受注パイプライン（PurchaseOrder生成＋在庫照合）への接続
-を検証する。
+????????????????????????
+1) ????? ? IncomingPO ???????
+2) ??????????????
+3) ????????????PurchaseOrder????????????
+??????
 """
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ def test_sandbox_fetch_new_pos_maps_payload():
     assert s.sp_api_sandbox is True and s.use_mock() is False
     vendor = SpApiVendorOrders(s, transport=transport)
     pos = vendor.fetch_new_pos()
-    assert seen["host"] == SANDBOX_HOST           # サンドボックスホストに接続
+    assert seen["host"] == SANDBOX_HOST           # ?????????????
     assert len(pos) == 1
     po = pos[0]
     assert po.amazon_po_number == "TEST-PO-001" and po.ship_to == "WAREHOUSE-A"
@@ -102,8 +102,8 @@ def test_sandbox_ingest_into_order_pipeline():
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine, future=True)()
 
-    # サンドボックスPOのSKUに対応する商品を登録し、在庫を10入庫
-    p = Product(sku="SKU-SANDBOX-1", name="サンドボックス品")
+    # ???????PO?SKU???????????????10??
+    p = Product(sku="SKU-SANDBOX-1", name="????????")
     session.add(p); session.flush()
     inventory_service.receive_stock(session, p.id, 10)
 
@@ -113,7 +113,7 @@ def test_sandbox_ingest_into_order_pipeline():
     assert po is not None
     line = session.scalar(select(OrderLine).where(OrderLine.order_id == po.id))
     assert line is not None and line.qty_ordered == 4
-    # 在庫10に対し4は即納可能 → 全量引当
+    # ??10???4????? ? ????
     assert line.qty_confirmed == 4 and line.qty_backordered == 0
     bal = inventory_service.get_balance(session, p.id)
     assert bal.allocated == 4 and bal.available == 6
@@ -198,7 +198,7 @@ def test_fba_snapshots_ingested_into_table():
     import app.db.models  # noqa
     Base.metadata.create_all(engine)
     s = sessionmaker(bind=engine, future=True)()
-    p = Product(sku="SKU-3P-1", name="3P品")
+    p = Product(sku="SKU-3P-1", name="3P?")
     s.add(p); s.flush()
     n = seller_service.ingest_fba_snapshots(s, integ=integ)
     assert n == 4
@@ -209,7 +209,7 @@ def test_fba_snapshots_ingested_into_table():
 
 
 # ---------------------------------------------------------------------
-# 3P注文取り込み / FBA reconcile（ドメイン着地）
+# 3P?????? / FBA reconcile????????
 # ---------------------------------------------------------------------
 def _mem_session():
     import app.db.models  # noqa
@@ -232,7 +232,7 @@ def test_ingest_seller_orders_idempotent():
     from app.db.models import SellerOrder, SellerOrderLine
     from app.services import seller_service
     s = _mem_session()
-    p = Product(sku="SKU-DEMO-001", name="3P品")
+    p = Product(sku="SKU-DEMO-001", name="3P?")
     s.add(p); s.flush()
     integ = _integ(seller=mock.MockSellerOrders())
 
@@ -241,9 +241,9 @@ def test_ingest_seller_orders_idempotent():
     so = s.scalars(select(SellerOrder)).one()
     assert so.amazon_order_id == "MOCK-3P-0001" and so.fulfillment_channel == "AFN"
     line = s.scalars(select(SellerOrderLine)).one()
-    assert line.quantity == 2 and line.product_id == p.id  # sku名寄せ成功
+    assert line.quantity == 2 and line.product_id == p.id  # sku?????
 
-    # 再取込は冪等（amazon_order_idで重複スキップ）
+    # ???????amazon_order_id????????
     n2 = seller_service.ingest_seller_orders(s, integ=integ)
     assert n2 == 0
     assert len(s.scalars(select(SellerOrder)).all()) == 1
@@ -252,15 +252,15 @@ def test_ingest_seller_orders_idempotent():
 def test_reconcile_fba_converges_ledger_to_snapshot():
     from app.services import inventory_service, seller_service
     s = _mem_session()
-    p = Product(sku="SKU-DEMO-001", name="3P品")
+    p = Product(sku="SKU-DEMO-001", name="3P?")
     s.add(p); s.flush()
     integ = _integ(fba_inventory=mock.MockFbaInventory())
 
-    # FBA絶対在庫を取り込み（fulfillable=12, inbound=4, reserved=1, unfulfillable=0）
+    # FBA??????????fulfillable=12, inbound=4, reserved=1, unfulfillable=0?
     seller_service.ingest_fba_snapshots(s, integ=integ)
-    # 台帳はまだ空 → reconcileで差分を補正movementに反映
+    # ?????? ? reconcile??????movement???
     corrections = inventory_service.reconcile_fba(s)
-    # delta=0 の unfulfillable を除く3ステートが補正される
+    # delta=0 ? unfulfillable ???3??????????
     assert {c["state"] for c in corrections} == {"fba_fulfillable", "fba_inbound", "fba_reserved"}
 
     bal = inventory_service.get_balance(s, p.id)
@@ -268,16 +268,16 @@ def test_reconcile_fba_converges_ledger_to_snapshot():
     assert bal.by_state.get("fba_inbound") == 4
     assert bal.by_state.get("fba_reserved") == 1
 
-    # 2回目は差分ゼロ（収束）
+    # 2???????????
     assert inventory_service.reconcile_fba(s) == []
 
 
 # ---------------------------------------------------------------------
-# #1 3P注文 → 在庫台帳連動（FBA/MFN分岐）
+# #1 3P?? ? ???????FBA/MFN???
 # ---------------------------------------------------------------------
 def _seed_product_with_stock(s, qty):
     from app.services import inventory_service
-    p = Product(sku="SKU-DEMO-001", name="3P品")
+    p = Product(sku="SKU-DEMO-001", name="3P?")
     s.add(p); s.flush()
     if qty:
         inventory_service.receive_stock(s, p.id, qty)
@@ -294,17 +294,17 @@ def test_seller_order_mfn_allocates_ledger():
             lines=[IncomingSellerOrderLine(sku="SKU-DEMO-001", asin="B0DEMO0001", quantity=2, item_price=1000.0)])
     seller_service.ingest_seller_orders(s, integ=_integ(seller=mock.MockSellerOrders(scripted=[mfn])))
     bal = inventory_service.get_balance(s, p.id)
-    assert bal.allocated == 2 and bal.available == 8  # 自社出荷=引当
+    assert bal.allocated == 2 and bal.available == 8  # ????=??
 
 
 def test_seller_order_afn_does_not_touch_own_stock():
     from app.services import inventory_service, seller_service
     s = _mem_session()
     p = _seed_product_with_stock(s, 10)
-    # 既定MockSellerOrdersはAFN(FBA)
+    # ??MockSellerOrders?AFN(FBA)
     seller_service.ingest_seller_orders(s, integ=_integ(seller=mock.MockSellerOrders()))
     bal = inventory_service.get_balance(s, p.id)
-    assert bal.available == 10 and bal.allocated == 0  # FBAは自社在庫を動かさない
+    assert bal.available == 10 and bal.allocated == 0  # FBA???????????
 
 
 def test_seller_order_mfn_shipped_ships_out():
@@ -317,22 +317,22 @@ def test_seller_order_mfn_shipped_ships_out():
             lines=[IncomingSellerOrderLine(sku="SKU-DEMO-001", asin="B0DEMO0001", quantity=2, item_price=1000.0)])
     seller_service.ingest_seller_orders(s, integ=_integ(seller=mock.MockSellerOrders(scripted=[shipped])))
     bal = inventory_service.get_balance(s, p.id)
-    assert bal.allocated == 0 and bal.available == 8  # 引当→出荷で在庫が抜ける
+    assert bal.allocated == 0 and bal.available == 8  # ????????????
 
 
 # ---------------------------------------------------------------------
-# #3 他チャネル取り込み（メールPDF注文 / Excel在庫）
+# #3 ?????????????PDF?? / Excel???
 # ---------------------------------------------------------------------
 def test_ingest_order_document_commits_high_confidence():
     from app.db.models import SellerOrder
     from app.services import doc_service, inventory_service
     s = _mem_session()
     p = _seed_product_with_stock(s, 10)
-    res = doc_service.ingest_order_document(s, "mail-1", integ=_integ())  # 既定MockOrderDoc=信頼0.95/MFN
+    res = doc_service.ingest_order_document(s, "mail-1", integ=_integ())  # ??MockOrderDoc=??0.95/MFN
     assert res["committed"] is True
     assert s.scalars(select(SellerOrder)).one().amazon_order_id == "DOC-mail-1"
     bal = inventory_service.get_balance(s, p.id)
-    assert bal.allocated == 3  # MFN→引当
+    assert bal.allocated == 3  # MFN???
 
 
 def test_ingest_order_document_holds_low_confidence():
@@ -346,14 +346,14 @@ def test_ingest_order_document_holds_low_confidence():
                          lines=[ParsedOrderDocLine(sku="SKU-DEMO-001", asin=None, quantity=1, unit_price=100.0)])
     res = doc_service.ingest_order_document(s, "mail-x", integ=_integ(order_doc=mock.MockOrderDoc(scripted=low)))
     assert res["committed"] is False and res["reason"] == "low_confidence"
-    assert s.scalars(select(SellerOrder)).all() == []  # 低信頼はコミットされない
+    assert s.scalars(select(SellerOrder)).all() == []  # ????????????
 
 
 def test_ingest_inventory_count_adjusts_own_warehouse():
     from app.services import doc_service, inventory_service
     s = _mem_session()
-    p = Product(sku="SKU-DEMO-001", name="3P品"); s.add(p); s.flush()  # 在庫0
-    res = doc_service.ingest_inventory_count(s, "book.xlsx", integ=_integ())  # 既定MockInventoryDoc=50
+    p = Product(sku="SKU-DEMO-001", name="3P?"); s.add(p); s.flush()  # ??0
+    res = doc_service.ingest_inventory_count(s, "book.xlsx", integ=_integ())  # ??MockInventoryDoc=50
     assert res["updated"] == 1
     assert inventory_service.get_balance(s, p.id).available == 50
 
@@ -362,10 +362,10 @@ def test_excel_inventory_doc_parses_real_xlsx(tmp_path):
     import openpyxl
     from app.integrations.live_adapters import ExcelInventoryDoc
     wb = openpyxl.Workbook(); ws = wb.active
-    ws.append(["SKU", "ASIN", "数量"])
+    ws.append(["SKU", "ASIN", "??"])
     ws.append(["SKU-A", "B0A", 12])
     ws.append(["SKU-B", None, 7])
-    ws.append([None, None, None])  # 空行はスキップ
+    ws.append([None, None, None])  # ???????
     fp = tmp_path / "inv.xlsx"; wb.save(fp)
     rows = ExcelInventoryDoc().parse(str(fp))
     assert len(rows) == 2
@@ -380,4 +380,4 @@ if __name__ == "__main__":
     test_fba_snapshots_ingested_into_table()
     test_ingest_seller_orders_idempotent()
     test_reconcile_fba_converges_ledger_to_snapshot()
-    print("OK: SP-APIサンドボックス取込テスト通過")
+    print("OK: SP-API??????????????")

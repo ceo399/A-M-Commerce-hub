@@ -1,6 +1,6 @@
-"""ジョブの単発実行CLI。
+﻿"""????????CLI?
 
-クラウドのスケジューラ（cron / EventBridge等）や手動から1回だけ叩く用途。
+????????????cron / EventBridge???????1????????
   python -m scripts.run_jobs --job collect_ads
   python -m scripts.run_jobs --job all
   python -m scripts.run_jobs --list
@@ -17,18 +17,18 @@ from app.services import jobs
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--job", choices=list(jobs.JOBS) + ["all"], help="実行するジョブ名")
-    p.add_argument("--list", action="store_true", help="ジョブ一覧を表示")
+    p.add_argument("--job", choices=list(jobs.JOBS) + ["all"], help="????????")
+    p.add_argument("--list", action="store_true", help="????????")
     args = p.parse_args()
 
     if args.list or not args.job:
-        print("利用可能なジョブ:")
+        print("????????:")
         for name in jobs.JOBS:
             print(f"  - {name}")
         return
 
     if settings.auto_create_tables:
-        init_db()  # 本番(Alembic運用)では schema は既に存在
+        init_db()  # ??(Alembic??)?? schema ?????
 
     if args.job == "all":
         out = [fn() for fn in jobs.JOBS.values()]

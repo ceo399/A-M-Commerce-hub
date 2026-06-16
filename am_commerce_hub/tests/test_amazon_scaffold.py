@@ -1,9 +1,9 @@
-"""Amazon実接続の足場テスト（httpx MockTransportで模擬。実資格情報不要）。
+﻿"""Amazon??????????httpx MockTransport?????????????
 
-- LWAトークン: 取得・キャッシュ・期限切れ更新
-- 堅牢HTTP: 429/5xx/ネットワーク再試行、Retry-After尊重、4xx即エラー
-- レート制御: トークンバケットの基本動作
-- Adsレポート枠組み: 作成→ポーリング→gzip JSONダウンロード
+- LWA????: ???????????????
+- ??HTTP: 429/5xx/??????????Retry-After???4xx????
+- ?????: ?????????????
+- Ads???????: ?????????gzip JSON??????
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from app.integrations.amazon.http import (
 NOOP = lambda *_: None
 
 
-# ---- LWAトークン: キャッシュと更新 ----
+# ---- LWA????: ???????? ----
 def test_lwa_token_cache_and_refresh():
     calls = {"n": 0}
     def handler(req: httpx.Request) -> httpx.Response:
@@ -35,14 +35,14 @@ def test_lwa_token_cache_and_refresh():
     clock = {"t": 1000.0}
     mgr = LwaTokenManager("cid", "secret", "rt", transport=t, clock=lambda: clock["t"])
     assert mgr.get_access_token() == "tok-1"
-    assert mgr.get_access_token() == "tok-1"      # キャッシュ（HTTPは増えない）
+    assert mgr.get_access_token() == "tok-1"      # ??????HTTP??????
     assert calls["n"] == 1
-    clock["t"] += 4000                              # 期限切れへ
-    assert mgr.get_access_token() == "tok-2"        # 更新される
+    clock["t"] += 4000                              # ?????
+    assert mgr.get_access_token() == "tok-2"        # ?????
     assert calls["n"] == 2
 
 
-# ---- 堅牢HTTP: 再試行・Retry-After・4xx即エラー・ネットワーク再試行 ----
+# ---- ??HTTP: ????Retry-After?4xx?????????????? ----
 def test_retry_on_429_then_success():
     seq = iter([429, 200])
     def handler(req):
@@ -70,7 +70,7 @@ def test_4xx_raises_without_retry():
     try:
         c.get("/p"); assert False, "should raise"
     except AmazonApiError as e:
-        assert e.status_code == 400 and calls["n"] == 1   # 再試行していない
+        assert e.status_code == 400 and calls["n"] == 1   # ????????
 
 
 def test_network_error_then_success():
@@ -93,23 +93,23 @@ def test_gives_up_after_max_retries():
         pass
 
 
-# ---- レート制御: バケットが枯渇したら待機（注入sleepで観測） ----
+# ---- ?????: ???????????????sleep???? ----
 def test_rate_limiter_throttles():
     waits = []
     clock = {"t": 0.0}
     rl = RateLimiter(rate_per_sec=1, burst=1, clock=lambda: clock["t"],
                      sleep=lambda s: waits.append(s))
-    rl.acquire()   # 1個目: 即時
-    rl.acquire()   # 2個目: 補充待ちが発生するはず
+    rl.acquire()   # 1??: ??
+    rl.acquire()   # 2??: ???????????
     assert waits and waits[0] > 0
 
 
-# ---- Adsレポート: 作成→ポーリング→gzip JSON ダウンロード ----
+# ---- Ads????: ?????????gzip JSON ?????? ----
 def test_ads_report_create_poll_download():
     poll = {"n": 0}
     dl_url = "https://reports-bucket.example.com/rep-1.json.gz"
     payload = gzip.compress(json.dumps(
-        [{"keywordId": "KW1", "keyword": "テスト", "impressions": 100,
+        [{"keywordId": "KW1", "keyword": "???", "impressions": 100,
           "clicks": 10, "cost": 300.0, "sales": 1500.0, "purchases": 1, "bid": 45.0}]
     ).encode("utf-8"))
 
@@ -135,11 +135,11 @@ def test_ads_report_create_poll_download():
     reports = AdsReportClient(ads, sleep=NOOP, poll_interval=0, download_transport=transport)
     rows = reports.run_report({"name": "t"})
     assert len(rows) == 1 and rows[0]["keywordId"] == "KW1"
-    assert poll["n"] == 2   # PENDING→COMPLETED まで2回ポーリング
+    assert poll["n"] == 2   # PENDING?COMPLETED ??2??????
 
 
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
             fn()
-    print("OK: Amazon足場テスト全通過")
+    print("OK: Amazon????????")

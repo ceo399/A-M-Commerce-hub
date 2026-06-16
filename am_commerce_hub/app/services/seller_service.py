@@ -1,7 +1,7 @@
-"""3P（Seller）取込サービス。
+﻿"""3P?Seller????????
 
-FBA Inventory API 由来の絶対在庫を inventory_snapshots へ取り込む。
-台帳(StockMovement)との差分reconcile（drift→補正movement）は次段で実装する。
+FBA Inventory API ???????? inventory_snapshots ??????
+??(StockMovement)????reconcile?drift???movement??????????
 """
 from __future__ import annotations
 
@@ -42,14 +42,14 @@ def _resolve_product(session: Session, sku: str | None, asin: str | None) -> Pro
 
 
 def ingest_fba_snapshots(session: Session, integ: Integrations | None = None) -> int:
-    """FBAの絶対在庫を取得し、ステート別の InventorySnapshot として記録。記録件数を返す。"""
+    """FBA???????????????? InventorySnapshot ??????????????"""
     integ = get_integrations(integ)
     captured = datetime.now(timezone.utc)
     written = 0
     for row in integ.fba_inventory.fetch_inventory():
         product = _resolve_product(session, row.seller_sku, row.asin)
         if product is None:
-            continue  # マスタ未登録のSKU/ASINはスキップ（名寄せ後に取り込む想定）
+            continue  # ???????SKU/ASIN??????????????????
         for state, qty in [
             (S.FBA_FULFILLABLE, row.fulfillable),
             (S.FBA_INBOUND, row.inbound),
@@ -66,11 +66,11 @@ def ingest_fba_snapshots(session: Session, integ: Integrations | None = None) ->
 
 
 def _apply_order_to_ledger(session: Session, so: SellerOrder) -> None:
-    """3P注文を在庫台帳へ連動。
+    """3P???????????
 
-    - AFN(FBA): 自社倉庫在庫は動かさない（AmazonがFBA在庫から引当→reconcileで反映）。
-    - MFN(自社出荷): 自社倉庫から引当(allocate)。注文が出荷済みなら出荷(ship_allocated)まで進める。
-      在庫不足分はここでは引当せず残す（バックオーダーは別途）。
+    - AFN(FBA): ?????????????Amazon?FBA???????reconcile?????
+    - MFN(????): ????????(allocate)????????????(ship_allocated)??????
+      ?????????????????????????????
     """
     if (so.fulfillment_channel or "").upper() == "AFN":
         return
@@ -93,10 +93,10 @@ def _apply_order_to_ledger(session: Session, so: SellerOrder) -> None:
 
 def ingest_seller_orders(session: Session, integ: Integrations | None = None,
                          apply_ledger: bool = True) -> int:
-    """3P注文(getOrders)を取り込み、SellerOrder/SellerOrderLineへ着地。新規取込件数を返す。
+    """3P??(getOrders)??????SellerOrder/SellerOrderLine??????????????
 
-    amazon_order_id で冪等（既存はスキップ）。明細の商品はsku→asinで名寄せ（未登録はproduct_id=None）。
-    apply_ledger=True のとき、新規注文を出荷経路で分岐して在庫台帳へ連動する。
+    amazon_order_id ???????????????????sku?asin?????????product_id=None??
+    apply_ledger=True ????????????????????????????
     """
     integ = get_integrations(integ)
     created = 0
@@ -114,7 +114,7 @@ def ingest_seller_orders(session: Session, integ: Integrations | None = None,
             source_system="sp_api_seller",
         )
         session.add(so)
-        session.flush()  # so.id 採番
+        session.flush()  # so.id ??
         for ln in o.lines:
             product = _resolve_product(session, ln.sku, ln.asin)
             session.add(SellerOrderLine(
@@ -123,7 +123,7 @@ def ingest_seller_orders(session: Session, integ: Integrations | None = None,
                 sku=ln.sku, asin=ln.asin,
                 quantity=ln.quantity, item_price=ln.item_price,
             ))
-        session.flush()  # line.id 採番（台帳連動の参照に必要）
+        session.flush()  # line.id ??????????????
         if apply_ledger:
             _apply_order_to_ledger(session, so)
         created += 1

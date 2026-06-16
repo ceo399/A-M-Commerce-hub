@@ -1,7 +1,7 @@
-"""Alembic 環境設定。
+﻿"""Alembic ?????
 
-DB URL はアプリ設定（settings.database_url / .env / 環境変数）から取得し、
-対象メタデータはアプリのモデルから取得する（autogenerate対応）。
+DB URL ???????settings.database_url / .env / ???????????
+??????????????????????autogenerate????
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.config import settings
 from app.db.base import Base
-import app.db.models  # noqa: F401  全モデルを登録
+import app.db.models  # noqa: F401  ???????
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

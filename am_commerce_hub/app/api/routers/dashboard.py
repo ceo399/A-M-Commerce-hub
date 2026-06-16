@@ -1,4 +1,4 @@
-﻿"""ダッシュボード v2 API"""
+﻿?"""??????? v2 API"""
 from __future__ import annotations
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, Query
@@ -60,6 +60,6 @@ def generate_ai_analysis(req_limit: int = 50, _=Depends(get_current_user)):
     with session_scope() as s:
         products = s.scalars(select(Product).limit(5)).all()
         return {"timestamp": datetime.now().isoformat(), "suggestions": [
-            {"asin": p.asin, "product_name": p.name, "diagnosis": "コンテンツ品質が標準以下",
-             "recommended_action": "A+ コンテンツを追加、動画を挿入", "priority": (i % 3) + 1}
+            {"asin": p.asin, "product_name": p.name, "diagnosis": "????????????",
+             "recommended_action": "A+ ??????????????", "priority": (i % 3) + 1}
             for i, p in enumerate(products)]}

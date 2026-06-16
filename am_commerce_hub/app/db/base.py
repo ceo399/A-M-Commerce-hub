@@ -1,4 +1,4 @@
-"""SQLAlchemy 宣言ベースと共通ミックスイン。"""
+﻿"""SQLAlchemy ???????????????"""
 from __future__ import annotations
 
 from datetime import datetime, timezone

@@ -1,4 +1,4 @@
-"""在庫 API（単一台帳ベース）。現在在庫は StockMovement の集計から導出する。"""
+﻿"""?? API??????????????? StockMovement ??????????"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -20,7 +20,7 @@ class ReceiveBody(BaseModel):
 
 
 class AdjustBody(BaseModel):
-    delta: int = Field(description="増減数（正=増・負=減）")
+    delta: int = Field(description="?????=???=??")
     note: str | None = None
 
 
@@ -47,7 +47,7 @@ def get_inventory(product_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         product = s.get(Product, product_id)
         if product is None:
-            raise HTTPException(404, "商品が見つかりません")
+            raise HTTPException(404, "??????????")
         bal = inventory_service.get_balance(s, product_id)
         return ser.inventory_dict(bal, product)
 
@@ -67,7 +67,7 @@ def receive(product_id: int, body: ReceiveBody, _=Depends(require_roles(Role.LOG
     with session_scope() as s:
         product = s.get(Product, product_id)
         if product is None:
-            raise HTTPException(404, "商品が見つかりません")
+            raise HTTPException(404, "??????????")
         inventory_service.receive_stock(s, product_id, body.quantity, ref_type="manual")
         bal = inventory_service.get_balance(s, product_id)
         return ser.inventory_dict(bal, product)
@@ -75,11 +75,11 @@ def receive(product_id: int, body: ReceiveBody, _=Depends(require_roles(Role.LOG
 
 @router.post("/{product_id}/adjust")
 def adjust(product_id: int, body: AdjustBody, _=Depends(require_roles(Role.LOGISTICS))):
-    """棚卸調整など。available を delta だけ増減し、台帳に記録。"""
+    """???????available ? delta ????????????"""
     with session_scope() as s:
         product = s.get(Product, product_id)
         if product is None:
-            raise HTTPException(404, "商品が見つかりません")
+            raise HTTPException(404, "??????????")
         try:
             bal = inventory_service.adjust(s, product_id, body.delta, ref_type="manual", note=body.note)
         except ValueError as e:

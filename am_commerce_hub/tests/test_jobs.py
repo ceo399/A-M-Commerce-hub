@@ -1,6 +1,6 @@
-"""定期ジョブのテスト: 各ジョブの動作・冪等性・スケジューラ発火。
+﻿"""?????????: ?????????????????????
 
-実行: python -m tests.test_jobs
+??: python -m tests.test_jobs
 """
 from __future__ import annotations
 
@@ -19,11 +19,11 @@ from app.services import jobs
 
 
 def _fresh_db():
-    # 既存ファイルDBを初期化（テストは現行設定のDBを使う）
+    # ??????DB??????????????DB????
     import os
     from app.config import settings
     from app.db.session import engine
-    engine.dispose()  # プール内の接続を閉じてからファイル操作（古いハンドル掴み回避）
+    engine.dispose()  # ???????????????????????????????
     if settings.database_url.startswith("sqlite") and "///" in settings.database_url:
         path = settings.database_url.split("///", 1)[1]
         if os.path.exists(path):
@@ -34,10 +34,10 @@ def _fresh_db():
 def test_collect_ads_is_idempotent_per_day():
     _fresh_db()
     r1 = jobs.collect_ads_job(report_date=date(2026, 6, 1))
-    r2 = jobs.collect_ads_job(report_date=date(2026, 6, 1))   # 同日二度目
+    r2 = jobs.collect_ads_job(report_date=date(2026, 6, 1))   # ?????
     assert r1["status"] == "ok" and r1["recommendations"] > 0, r1
     assert r2["status"] == "skipped", r2
-    # 別日なら実行される
+    # ?????????
     r3 = jobs.collect_ads_job(report_date=date(2026, 6, 2))
     assert r3["status"] == "ok", r3
 
@@ -84,4 +84,4 @@ if __name__ == "__main__":
     test_ingest_orders_runs()
     test_cleanup_removes_expired_and_consumed()
     test_scheduler_actually_fires()
-    print("OK: ジョブ/スケジューラのテスト全通過")
+    print("OK: ???/?????????????")

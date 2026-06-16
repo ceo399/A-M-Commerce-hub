@@ -1,12 +1,12 @@
-"""本番アダプタ（Amazon実接続）。
+﻿"""???????Amazon?????
 
-横断機能（OAuthトークン管理・リトライ/レート制御・Adsレポートのポーリング）は
-app/integrations/amazon/ 配下に実装済みで、ここではそれらを組み立てて各ポートに接続する。
+?????OAuth???????????/??????Ads????????????
+app/integrations/amazon/ ????????????????????????????????
 
-各オペレーションの「リクエストpath/body」と「レスポンス→DTO整形」は、
-実APIの契約（資格情報取得後に確定）に合わせて埋める箇所を TODO として明示している。
-プラミング（認証・再試行・レート制御・レポート枠組み）は完成・検証済みのため、
-残作業は各オペレーションの個別マッピングのみ。
+???????????????path/body?????????DTO?????
+?API?????????????????????????? TODO ??????????
+???????????????????????????????????????
+???????????????????????
 """
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ from app.integrations.ports import (
     VendorOrdersPort,
 )
 
-_FILL = "実APIの契約に合わせて path/body とレスポンス整形を実装してください（資格情報取得後）"
+_FILL = "?API???????? path/body ??????????????????????????"
 
 
 def _txn_id(resp) -> str | None:
@@ -51,17 +51,17 @@ def _txn_id(resp) -> str | None:
 
 
 # =========================================================================
-# SP-API: Vendor Orders（フロー2）
+# SP-API: Vendor Orders????2?
 # =========================================================================
 class SpApiVendorOrders(VendorOrdersPort):
-    """SP-API Vendor Orders。INTEGRATION_MODE=sandbox なら静的サンドボックスに接続。"""
+    """SP-API Vendor Orders?INTEGRATION_MODE=sandbox ???????????????"""
 
     def __init__(self, settings: Settings, *, transport=None, token_manager=None):
         self.sp = SpApiClient(settings, region=settings.sp_api_region,
                               transport=transport, token_manager=token_manager)
 
     def fetch_new_pos(self, *, created_after: str | None = None) -> list[IncomingPO]:
-        # createdAfter は必須相当。未指定なら直近7日。
+        # createdAfter ?????????????7??
         if created_after is None:
             created_after = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
         resp = self.sp.get("/vendor/orders/v1/purchaseOrders",
@@ -113,14 +113,14 @@ class SpApiVendorOrders(VendorOrdersPort):
 
 
 # =========================================================================
-# SP-API: Catalog / Listings（フロー3）
+# SP-API: Catalog / Listings????3?
 # =========================================================================
 class SpApiCatalog(CatalogPort):
     def __init__(self, settings: Settings):
         self.sp = SpApiClient(settings, region=settings.sp_api_region)
 
     def check_status(self, sku, jan, asin) -> CatalogStatus:
-        # 例: self.sp.get("/catalog/2022-04-01/items", params={"identifiers": jan, ...})
+        # ?: self.sp.get("/catalog/2022-04-01/items", params={"identifiers": jan, ...})
         raise NotImplementedError(f"searchCatalogItems: {_FILL}")
 
 
@@ -129,15 +129,15 @@ class SpApiListings(ListingsPort):
         self.sp = SpApiClient(settings, region=settings.sp_api_region)
 
     def publish_listing(self, sku, title, bullets, description, images) -> str:
-        # 例: self.sp.put(f"/listings/2021-08-01/items/{sellerId}/{sku}", json={...})
+        # ?: self.sp.put(f"/listings/2021-08-01/items/{sellerId}/{sku}", json={...})
         raise NotImplementedError(f"putListingsItem: {_FILL}")
 
     def set_discontinued(self, asin) -> None:
-        raise NotImplementedError(f"出品停止(数量0/クローズ): {_FILL}")
+        raise NotImplementedError(f"????(??0/????): {_FILL}")
 
 
 # =========================================================================
-# Ads API（フロー1）— レポート枠組みは実装済み、spec/列名のみ調整
+# Ads API????1?? ?????????????spec/??????
 # =========================================================================
 class AmazonAds(AdsPort):
     def __init__(self, settings: Settings):
@@ -145,7 +145,7 @@ class AmazonAds(AdsPort):
         self.reports = AdsReportClient(self.ads)
 
     def fetch_daily_report(self, report_date: date) -> list[AdMetricRow]:
-        # レポート定義(spec)。列名・レポートタイプは実APIに合わせて調整する。
+        # ??????(spec)?????????????API??????????
         spec = {
             "name": f"daily-keyword-{report_date.isoformat()}",
             "startDate": report_date.isoformat(),
@@ -160,10 +160,10 @@ class AmazonAds(AdsPort):
                 "format": "GZIP_JSON",
             },
         }
-        rows = self.reports.run_report(spec)  # 作成→ポーリング→DL（実装・検証済み）
+        rows = self.reports.run_report(spec)  # ?????????DL?????????
         out: list[AdMetricRow] = []
         for r in rows:
-            # TODO: 実レポートの列名に合わせてキーを調整
+            # TODO: ??????????????????
             out.append(AdMetricRow(
                 amazon_entity_id=str(r.get("keywordId", "")),
                 entity_type="keyword",
@@ -179,12 +179,12 @@ class AmazonAds(AdsPort):
         return out
 
     def update_bid(self, amazon_entity_id, new_bid) -> None:
-        # 例: self.ads.put("/sp/keywords", json=[{"keywordId":..., "bid":new_bid,
+        # ?: self.ads.put("/sp/keywords", json=[{"keywordId":..., "bid":new_bid,
         #     "state": "paused" if new_bid is None else "enabled"}])
-        raise NotImplementedError(f"keywords更新(入札/停止): {_FILL}")
+        raise NotImplementedError(f"keywords??(??/??): {_FILL}")
 
     def update_budget(self, amazon_entity_id, daily_budget) -> None:
-        raise NotImplementedError(f"campaigns予算更新: {_FILL}")
+        raise NotImplementedError(f"campaigns????: {_FILL}")
 
 
 class AmazonAttribution(AttributionPort):
@@ -192,36 +192,36 @@ class AmazonAttribution(AttributionPort):
         self.ads = AdsApiClient(settings, region=settings.ads_api_region)
 
     def fetch_attribution(self, report_date: date) -> dict:
-        raise NotImplementedError(f"Amazon Attributionレポート: {_FILL}")
+        raise NotImplementedError(f"Amazon Attribution????: {_FILL}")
 
 
 # =========================================================================
-# 出荷ハブ（SFTP）— paramiko等の導入後に実装
+# ?????SFTP?? paramiko????????
 # =========================================================================
 class SftpShippingHub(ShippingHubPort):
     def __init__(self, settings: Settings):
         self.settings = settings
 
     def send_shipment_csv(self, amazon_po_number, rows) -> str:
-        raise NotImplementedError("paramiko等でAISハブへSFTP送信を実装（要: paramiko追加）")
+        raise NotImplementedError("paramiko??AIS???SFTP???????: paramiko???")
 
 
 # =========================================================================
-# SP-API: Seller（3P）Orders / FBA Inventory
-#   1P(Vendor)とは別アカウント・別認可 → Seller用リフレッシュトークンを使う。
-#   client_id/secret は同一アプリで共有。INTEGRATION_MODE=sandbox なら静的サンドボックス。
+# SP-API: Seller?3P?Orders / FBA Inventory
+#   1P(Vendor)???????????? ? Seller???????????????
+#   client_id/secret ??????????INTEGRATION_MODE=sandbox ????????????
 # =========================================================================
 _MARKETPLACE_JP = "A1VC38T7YXB528"  # Amazon.co.jp
 
 
 def _seller_client(settings: Settings, *, transport=None, token_manager=None) -> SpApiClient:
-    # Seller専用のclient_id/secretがあればそれを使い、無ければVendorと共有のものにフォールバック
+    # Seller???client_id/secret??????????????Vendor??????????????
     client_id = settings.sp_api_seller_client_id or settings.sp_api_client_id or ""
     client_secret = settings.sp_api_seller_client_secret or settings.sp_api_client_secret or ""
     tm = token_manager or LwaTokenManager(
         client_id,
         client_secret,
-        settings.sp_api_seller_refresh_token or "",  # ← Seller認可のトークン
+        settings.sp_api_seller_refresh_token or "",  # ? Seller???????
         transport=transport,
     )
     return SpApiClient(settings, region=settings.sp_api_region,
@@ -236,7 +236,7 @@ def _to_int(v) -> int:
 
 
 class SpApiSellerOrders(SellerOrdersPort):
-    """Seller Central / Orders API。getOrders で受注、getOrderItems で明細を取得。"""
+    """Seller Central / Orders API?getOrders ????getOrderItems ???????"""
 
     def __init__(self, settings: Settings, *, transport=None, token_manager=None):
         self.sp = _seller_client(settings, transport=transport, token_manager=token_manager)
@@ -277,7 +277,7 @@ class SpApiSellerOrders(SellerOrdersPort):
 
 
 class SpApiFbaInventory(FbaInventoryPort):
-    """FBA Inventory API。getInventorySummaries で絶対在庫を取得し DTO へ整形。"""
+    """FBA Inventory API?getInventorySummaries ????????? DTO ????"""
 
     def __init__(self, settings: Settings, *, transport=None, token_manager=None):
         self.sp = _seller_client(settings, transport=transport, token_manager=token_manager)
@@ -309,20 +309,20 @@ class SpApiFbaInventory(FbaInventoryPort):
 
 
 # =========================================================================
-# 他チャネル取り込み: Excel在庫(実装) / メールPDF注文(差し替え口)
+# ?????????: Excel??(??) / ???PDF??(?????)
 # =========================================================================
 class ExcelInventoryDoc(InventoryDocPort):
-    """Excel在庫表(.xlsx)をopenpyxlで解析し、棚卸カウント行を返す。
+    """Excel???(.xlsx)?openpyxl????????????????
 
-    ヘッダ行から SKU / ASIN / 数量 列を推定する。source はファイルパス。
-    Chat添付/Driveリンクからの取得は外側(配信層)の責務とし、ここはパス→行に専念する。
+    ?????? SKU / ASIN / ?? ???????source ????????
+    Chat??/Drive???????????(???)???????????????????
     """
     _SKU_KEYS = {"sku"}
     _ASIN_KEYS = {"asin"}
-    _QTY_KEYS = {"数量", "在庫", "在庫数", "qty", "quantity", "count", "数"}
+    _QTY_KEYS = {"??", "??", "???", "qty", "quantity", "count", "?"}
 
     def parse(self, source: str) -> list[InventoryCountRow]:
-        import openpyxl  # 実行時import（既にrequirementsに含む）
+        import openpyxl  # ???import???requirements????
         wb = openpyxl.load_workbook(source, read_only=True, data_only=True)
         ws = wb.active
         rows = ws.iter_rows(values_only=True)
@@ -360,17 +360,17 @@ class ExcelInventoryDoc(InventoryDocPort):
 
 
 class PdfOrderDoc(OrderDocPort):
-    """メール/PDF注文の構造化抽出（差し替え口）。
+    """???/PDF????????????????
 
-    本実装では PDF/メール本文を読み取り、AIPort(Claude)で
-    {外部参照, 明細(sku/asin/qty/price), 信頼度} を抽出する想定。
-    低信頼の結果は呼び出し側(seller_service.ingest_order_documents)が保留する。
+    ????? PDF/???????????AIPort(Claude)?
+    {????, ??(sku/asin/qty/price), ???} ????????
+    ????????????(seller_service.ingest_order_documents)??????
     """
     def __init__(self, settings: Settings, ai=None):
         self.settings = settings
-        self.ai = ai  # AIPort（Claude）を注入
+        self.ai = ai  # AIPort?Claude????
 
     def parse(self, source: str) -> ParsedOrderDoc:
         raise NotImplementedError(
-            f"PDF注文抽出: PDF/メールの読込とAI抽出(信頼度付き)を実装してください。source={source}"
+            f"PDF????: PDF/???????AI??(?????)??????????source={source}"
         )

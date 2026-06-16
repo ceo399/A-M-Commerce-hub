@@ -1,14 +1,14 @@
-"""Amazon Ads API クライアントと、レポートの非同期ポーリング枠組み。
+﻿"""Amazon Ads API ?????????????????????????
 
-Ads APIのヘッダ:
-  Authorization: Bearer <LWAトークン>
+Ads API????:
+  Authorization: Bearer <LWA????>
   Amazon-Advertising-API-ClientId: <client_id>
   Amazon-Advertising-API-Scope: <profile_id>
 
-レポート(v3)は非同期: 作成(POST)→reportId取得→状態をポーリング(GET)→
-COMPLETEDになったら url(署名付き)からgzip JSONをダウンロード、という流れ。
-この一連を run_report() に集約してある。実際のレポート定義(spec)や
-状態フィールド名は資格情報取得後に確定・調整する（既定はv3の一般形）。
+????(v3)????: ??(POST)?reportId???????????(GET)?
+COMPLETED????? url(????)??gzip JSON??????????????
+????? run_report() ?????????????????(spec)?
+????????????????????????????v3??????
 """
 from __future__ import annotations
 
@@ -26,10 +26,10 @@ from app.integrations.amazon.http import AmazonApiError, RateLimiter, ResilientH
 ADS_HOSTS = {
     "na": "https://advertising-api.amazon.com",
     "eu": "https://advertising-api-eu.amazon.com",
-    "fe": "https://advertising-api-fe.amazon.com",  # 日本を含む極東
+    "fe": "https://advertising-api-fe.amazon.com",  # ???????
 }
 
-# レポートの状態（v3の一般形。実APIに合わせて調整可）
+# ????????v3??????API?????????
 _DONE = {"COMPLETED", "SUCCESS"}
 _FAILED = {"FAILURE", "CANCELLED", "FAILED"}
 
@@ -76,7 +76,7 @@ class AdsApiClient:
 
 
 class AdsReportClient:
-    """レポート作成→ポーリング→ダウンロードの枠組み。"""
+    """????????????????????????"""
     def __init__(self, ads: AdsApiClient, *,
                  reports_path: str = "/reporting/reports",
                  poll_interval: float = 5.0, poll_timeout: float = 900.0,
@@ -92,19 +92,19 @@ class AdsReportClient:
         self._download_transport = download_transport
 
     def create_report(self, spec: dict) -> str:
-        """レポート作成。reportId を返す。"""
+        """???????reportId ????"""
         resp = self.ads.post(self.reports_path, json=spec)
         data = resp.json()
         report_id = data.get("reportId") or data.get("reportingId") or data.get("id")
         if not report_id:
-            raise AmazonApiError(resp.status_code, "reportId が応答に含まれません", resp.text)
+            raise AmazonApiError(resp.status_code, "reportId ??????????", resp.text)
         return report_id
 
     def get_report(self, report_id: str) -> dict:
         return self.ads.get(f"{self.reports_path}/{report_id}").json()
 
     def wait_for_report(self, report_id: str) -> str:
-        """COMPLETEDまでポーリングし、ダウンロードURLを返す。"""
+        """COMPLETED???????????????URL????"""
         deadline = self._clock() + self.poll_timeout
         while True:
             data = self.get_report(report_id)
@@ -112,17 +112,17 @@ class AdsReportClient:
             if status in _DONE:
                 url = data.get("url") or data.get("location")
                 if not url:
-                    raise AmazonApiError(200, "完了したがダウンロードURLが無い", json.dumps(data))
+                    raise AmazonApiError(200, "???????????URL???", json.dumps(data))
                 return url
             if status in _FAILED:
-                raise AmazonApiError(200, f"レポート生成に失敗: status={status}", json.dumps(data))
+                raise AmazonApiError(200, f"?????????: status={status}", json.dumps(data))
             if self._clock() >= deadline:
-                raise TimeoutError(f"レポート待機がタイムアウト (report_id={report_id})")
+                raise TimeoutError(f"????????????? (report_id={report_id})")
             self._sleep(self.poll_interval)
 
     def download_report(self, url: str) -> list[dict]:
-        """署名付きURLからgzip JSONを取得して行配列に展開。"""
-        # ダウンロードURLは別ドメイン（S3等）。テスト用にtransportを注入可能。
+        """????URL??gzip JSON????????????"""
+        # ??????URL???????S3????????transport??????
         if self._download_transport is not None:
             client = httpx.Client(transport=self._download_transport, timeout=60)
             try:
@@ -136,13 +136,13 @@ class AdsReportClient:
         try:
             raw = gzip.decompress(raw)
         except (OSError, gzip.BadGzipFile):
-            pass  # 非圧縮で返るケースも許容
+            pass  # ????????????
         text = raw.decode("utf-8")
         parsed = json.loads(text)
         return parsed if isinstance(parsed, list) else parsed.get("rows", parsed)
 
     def run_report(self, spec: dict) -> list[dict]:
-        """作成→ポーリング→ダウンロードを一括実行。"""
+        """?????????????????????"""
         report_id = self.create_report(spec)
         url = self.wait_for_report(report_id)
         return self.download_report(url)

@@ -1,11 +1,11 @@
-"""広告運用サービス（フロー1）。
+﻿"""????????????1??
 
-Amazon Ads API → 日次レポート自動取得 → 広告データ収集・前処理
- → ACoS/ROAS目標値との乖離抽出 → AI(Claude)による分析と推論
- → キーワードごとの入札増減・停止案算出 → AIダッシュボードへ提案一覧
- → マーケ責任者の確認・一括承認（否認/手動修正可）
- → Ads API経由で入札額・予算を更新 → 外部トラフィックAttribution計測
- → 自社DBへ運用履歴・AIの成功率データ保存
+Amazon Ads API ? ?????????? ? ???????????
+ ? ACoS/ROAS????????? ? AI(Claude)????????
+ ? ?????????????????? ? AI????????????
+ ? ?????????????????/??????
+ ? Ads API???????????? ? ????????Attribution??
+ ? ??DB??????AI?????????
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ from app.services import approval_service
 
 def collect_and_recommend(session: Session, report_date: date | None = None,
                           integ: Integrations | None = None) -> list[BidRecommendation]:
-    """日次レポート取得 → 指標保存 → AI分析 → 提案生成 → 一括承認タスク起票。"""
+    """???????? ? ???? ? AI?? ? ???? ? ??????????"""
     integ = get_integrations(integ)
     report_date = report_date or date.today()
 
@@ -50,7 +50,7 @@ def collect_and_recommend(session: Session, report_date: date | None = None,
         })
     session.flush()
 
-    # AIによる分析・推論（ACoS/ROAS目標との乖離をふまえた入札案）
+    # AI?????????ACoS/ROAS???????????????
     ai_recs = integ.ai.analyze_ads(metrics_for_ai, settings.target_acos)
 
     recs: list[BidRecommendation] = []
@@ -76,7 +76,7 @@ def collect_and_recommend(session: Session, report_date: date | None = None,
         approval_service.create_task(
             session, ApprovalType.AD_BID, ref_type="bid_recommendation_batch",
             ref_id=report_date.toordinal(),
-            summary=f"{report_date} の入札提案 {len(recs)}件 一括承認",
+            summary=f"{report_date} ????? {len(recs)}? ????",
         )
     return recs
 
@@ -99,9 +99,9 @@ def _upsert_entity(session: Session, row) -> AdEntity:
 def apply_recommendations(session: Session, rec_ids: list[int] | None = None,
                           report_date: date | None = None,
                           integ: Integrations | None = None) -> int:
-    """承認された提案を Ads API へ反映。反映件数を返す。
+    """???????? Ads API ????????????
 
-    rec_ids 指定でその提案のみ、未指定なら proposed の全件を対象。
+    rec_ids ??????????????? proposed ???????
     """
     integ = get_integrations(integ)
     stmt = select(BidRecommendation).where(
@@ -120,13 +120,13 @@ def apply_recommendations(session: Session, rec_ids: list[int] | None = None,
         rec.status = BidRecommendationStatus.APPLIED
         applied += 1
 
-    # 外部トラフィック Attribution 計測（運用履歴に付随して取得）
+    # ???????? Attribution ???????????????
     integ.attribution.fetch_attribution(report_date or date.today())
     return applied
 
 
 def approve_all(session: Session, accept: bool = True) -> int:
-    """マーケ責任者の一括承認。proposed を一括で approved/rejected に。"""
+    """????????????proposed ???? approved/rejected ??"""
     new_status = (BidRecommendationStatus.APPROVED if accept
                   else BidRecommendationStatus.REJECTED)
     recs = session.scalars(
@@ -137,36 +137,36 @@ def approve_all(session: Session, accept: bool = True) -> int:
     for rec in recs:
         rec.status = new_status
         count += 1
-    session.flush()  # 同一セッション内の後続SELECTに反映させる（autoflush=Falseのため）
+    session.flush()  # ???????????SELECT???????autoflush=False????
     return count
 
 def generate_ai_suggestions(session: Session, report_date: date) -> dict:
-    """Claude API ���g���� 4 �v�f�̒�Ă𐶐�"""
+    """Claude API ??g???? 4 ?v?f???????"""
     return {"suggestions": []}
 
 def generate_ai_suggestions(session: Session, report_date: date) -> dict:
-    """Claude API ���g���� 4 �v�f�̒�Ă𐶐�
-    - ����ő剻
-    - �VASIN�i��
-    - �}�[�P�b�g�j�[�Y�Ή�
-    - ���[�J�[���l����
+    """Claude API ??g???? 4 ?v?f???????
+    - ??????
+    - ?VASIN?i??
+    - ?}?[?P?b?g?j?[?Y???
+    - ???[?J?[???l????
     """
     import anthropic
     integ = get_integrations()
     
-    # ���g���N�X���W
+    # ???g???N?X???W
     metrics = session.scalars(
         select(AdMetricSnapshot).where(AdMetricSnapshot.report_date == report_date)
     )
     
-    # Claude API �Ăяo��
+    # Claude API ???o??
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=2000,
         messages=[{
             "role": "user",
-            "content": f"�ȉ��̃��g���N�X�𕪐͂��āA4�v�f�̒�Ă𐶐����Ă�������: {metrics}"
+            "content": f"???????g???N?X???????A4?v?f??????????????????: {metrics}"
         }]
     )
     

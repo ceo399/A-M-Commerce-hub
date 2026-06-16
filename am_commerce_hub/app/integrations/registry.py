@@ -1,7 +1,7 @@
-"""統合レジストリ（ファクトリ）。
+﻿"""???????????????
 
-設定の integration_mode に応じてモック/本番アダプタを返す。
-サービス層は get_integrations() を通してのみ外部に触れる。
+??? integration_mode ???????/??????????
+?????? get_integrations() ?????????????
 """
 from __future__ import annotations
 
@@ -35,10 +35,10 @@ class Integrations:
     shipping_hub: ShippingHubPort
     ai: AIPort
     otp: OtpDeliveryPort
-    # 3P（Seller）系。既存の生成箇所を壊さないよう既定はmock。
+    # 3P?Seller????????????????????mock?
     seller: SellerOrdersPort = field(default_factory=mock.MockSellerOrders)
     fba_inventory: FbaInventoryPort = field(default_factory=mock.MockFbaInventory)
-    # 他チャネル取り込み（メールPDF注文 / Excel在庫）。既定はmock。
+    # ?????????????PDF?? / Excel???????mock?
     order_doc: OrderDocPort = field(default_factory=mock.MockOrderDoc)
     inventory_doc: InventoryDocPort = field(default_factory=mock.MockInventoryDoc)
 
@@ -61,21 +61,21 @@ def _build_mock() -> Integrations:
 
 
 def _build_live() -> Integrations:
-    """本番/サンドボックスのアダプタを組み立てる。
+    """??/???????????????????
 
-    各アダプタは個別に構築し、資格情報不足等で失敗したものだけ mock にフォールバックする
-    （例: SP-APIサンドボックスのトークンはあるが Ads 資格情報が無い場合でも vendor は実接続）。
+    ????????????????????????????? mock ??????????
+    ??: SP-API???????????????? Ads ??????????? vendor ??????
     """
     from app.integrations import live_adapters as live
     from app.logging_config import get_logger
     log = get_logger("amhub.integrations")
-    log.warning("INTEGRATION_MODE=%s: Amazon実接続アダプタを使用します", settings.integration_mode)
+    log.warning("INTEGRATION_MODE=%s: Amazon?????????????", settings.integration_mode)
 
     def _safe(build, fallback, name):
         try:
             return build()
         except Exception as e:  # noqa: BLE001
-            log.warning("live adapter %s の構築に失敗→mockにフォールバック: %s", name, e)
+            log.warning("live adapter %s ???????mock????????: %s", name, e)
             return fallback()
 
     return Integrations(
@@ -85,8 +85,8 @@ def _build_live() -> Integrations:
         ads=_safe(lambda: live.AmazonAds(settings), mock.MockAds, "ads"),
         attribution=_safe(lambda: live.AmazonAttribution(settings), mock.MockAttribution, "attribution"),
         shipping_hub=_safe(lambda: live.SftpShippingHub(settings), mock.MockShippingHub, "shipping_hub"),
-        ai=mock.MockAI(),          # AI実接続は別途（差し替え口は用意済み）
-        otp=mock.MockOtpDelivery(),  # OTP実配信は別途（Twilio/SES）
+        ai=mock.MockAI(),          # AI??????????????????
+        otp=mock.MockOtpDelivery(),  # OTP???????Twilio/SES?
         seller=_safe(lambda: live.SpApiSellerOrders(settings), mock.MockSellerOrders, "seller"),
         fba_inventory=_safe(lambda: live.SpApiFbaInventory(settings), mock.MockFbaInventory, "fba_inventory"),
         order_doc=_safe(lambda: live.PdfOrderDoc(settings), mock.MockOrderDoc, "order_doc"),
@@ -98,7 +98,7 @@ _cached: Integrations | None = None
 
 
 def get_integrations(override: Integrations | None = None) -> Integrations:
-    """既定はキャッシュを返す。テスト時は override で差し替え可能。"""
+    """????????????????? override ????????"""
     global _cached
     if override is not None:
         return override

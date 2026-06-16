@@ -1,4 +1,4 @@
-"""受注(Amazon PO) API。"""
+﻿"""??(Amazon PO) API?"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -28,13 +28,13 @@ def get_order(order_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         po = s.get(PurchaseOrder, order_id)
         if po is None:
-            raise HTTPException(404, "受注が見つかりません")
+            raise HTTPException(404, "??????????")
         return ser.order_dict(po, with_lines=True)
 
 
 @router.post("/ingest")
 def ingest_orders(_=Depends(require_roles(Role.LOGISTICS))):
-    """Vendor APIから新規POを取り込み、在庫照合・PO Ack・承認起票まで実行。"""
+    """Vendor API????PO???????????PO Ack??????????"""
     with session_scope() as s:
         pos = order_service.ingest_new_pos(s)
         return {"ingested": [ser.order_dict(p, with_lines=True) for p in pos]}

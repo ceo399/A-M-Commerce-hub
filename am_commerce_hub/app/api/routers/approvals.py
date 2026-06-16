@@ -1,4 +1,4 @@
-"""承認 API。決裁すると後続処理（出荷・出品・入札反映など）まで自動進行。"""
+﻿"""?? API???????????????????????????????"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -41,23 +41,23 @@ def get_approval(task_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         t = s.get(ApprovalTask, task_id)
         if t is None:
-            raise HTTPException(404, "承認タスクが見つかりません")
+            raise HTTPException(404, "?????????????")
         return ser.approval_dict(t)
 
 
 @router.post("/{task_id}/decide")
 def decide(task_id: int, body: DecideBody, current=Depends(get_current_user)):
-    """承認/否認。対象の承認種別に必要なロール（または管理者）が必要。"""
+    """??/?????????????????????????????"""
     with session_scope() as s:
         task = s.get(ApprovalTask, task_id)
         if task is None:
-            raise HTTPException(404, "承認タスクが見つかりません")
+            raise HTTPException(404, "?????????????")
         if task.status != ApprovalStatus.PENDING:
-            raise HTTPException(400, "既に決裁済みのタスクです")
+            raise HTTPException(400, "????????????")
         required = APPROVAL_ROLE_MAP.get(task.approval_type)
         allowed = {Role.ADMIN.value} | ({required.value} if required else set())
         if not (set(current["roles"]) & allowed):
-            need = required.value if required else "適切な"
-            raise HTTPException(403, f"この承認には {need} ロールが必要です")
+            need = required.value if required else "???"
+            raise HTTPException(403, f"?????? {need} ????????")
         return workflow.apply_decision(s, task_id=task_id, approved=body.approved,
                                        by=current["email"])

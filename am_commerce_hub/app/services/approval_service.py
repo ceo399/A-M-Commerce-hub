@@ -1,4 +1,4 @@
-"""承認サービス: 各フローの人手承認ゲートを統一管理。"""
+﻿"""??????: ??????????????????"""
 from __future__ import annotations
 
 from sqlalchemy import select
@@ -28,7 +28,7 @@ def pending(session: Session, approval_type: ApprovalType | None = None) -> list
 def decide(session: Session, task_id: int, approved: bool, by: str = "operator") -> ApprovalTask:
     task = session.get(ApprovalTask, task_id)
     if task is None:
-        raise ValueError(f"ApprovalTask {task_id} が見つかりません")
+        raise ValueError(f"ApprovalTask {task_id} ????????")
     task.status = ApprovalStatus.APPROVED if approved else ApprovalStatus.REJECTED
     task.decided_by = by
     task.decided_at = utcnow()

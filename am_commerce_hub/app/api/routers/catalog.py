@@ -1,4 +1,4 @@
-"""カタログ・出品 API（取込アップロード／出品ドラフト編集）。"""
+﻿"""??????? API????????????????????"""
 from __future__ import annotations
 
 import tempfile
@@ -20,13 +20,13 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
 @router.post("/import")
 async def import_catalog(file: UploadFile = File(...), sheet: str | None = None,
                          _=Depends(require_roles(Role.MERCHANDISING))):
-    """メーカーカタログ(CSV/Excel)をアップロードして取り込む。"""
+    """????????(CSV/Excel)??????????????"""
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in (".csv", ".tsv", ".txt", ".xlsx", ".xlsm"):
-        raise HTTPException(400, "CSV または Excel(.xlsx) をアップロードしてください")
+        raise HTTPException(400, "CSV ??? Excel(.xlsx) ?????????????")
     data = await file.read()
-    # Windowsでは開いたままのNamedTemporaryFileを別ハンドルで開けない（ロック）ため、
-    # 一旦書き込んで閉じてからパースし、最後に必ず削除する。
+    # Windows????????NamedTemporaryFile???????????????????
+    # ???????????????????????????
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
     try:
         tmp.write(data)
@@ -59,19 +59,19 @@ def get_draft(draft_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         d = s.get(ListingDraft, draft_id)
         if d is None:
-            raise HTTPException(404, "出品ドラフトが見つかりません")
+            raise HTTPException(404, "??????????????")
         return ser.listing_draft_dict(d)
 
 
 @router.patch("/drafts/{draft_id}")
 def edit_draft(draft_id: int, body: DraftPatch, _=Depends(require_roles(Role.MERCHANDISING))):
-    """承認前にタイトル・箇条書き・紹介文を手直しする。"""
+    """????????????????????????"""
     with session_scope() as s:
         d = s.get(ListingDraft, draft_id)
         if d is None:
-            raise HTTPException(404, "出品ドラフトが見つかりません")
+            raise HTTPException(404, "??????????????")
         if d.status not in (ListingDraftStatus.PENDING_APPROVAL, ListingDraftStatus.GENERATING):
-            raise HTTPException(400, "承認待ち以外のドラフトは編集できません")
+            raise HTTPException(400, "???????????????????")
         for k, v in body.model_dump(exclude_unset=True).items():
             setattr(d, k, v)
         s.flush()

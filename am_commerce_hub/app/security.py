@@ -1,4 +1,4 @@
-"""パスワードハッシュ・JWT・OTPコード生成。"""
+﻿"""??????????JWT?OTP??????"""
 from __future__ import annotations
 
 import base64
@@ -12,7 +12,7 @@ import jwt
 from app.config import settings
 
 
-# ---- パスワード（bcrypt。72バイト制限回避のため事前にSHA-256で正規化） ----
+# ---- ??????bcrypt?72?????????????SHA-256????? ----
 def _prepare(password: str) -> bytes:
     digest = hashlib.sha256(password.encode("utf-8")).digest()
     return base64.b64encode(digest)
@@ -29,7 +29,7 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-# ---- JWT アクセストークン ----
+# ---- JWT ???????? ----
 def create_access_token(user_id: int, email: str, roles: list[str]) -> str:
     now = datetime.now(timezone.utc)
     payload = {
@@ -46,7 +46,7 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
 
 
-# ---- OTP（二段階認証コード） ----
+# ---- OTP?????????? ----
 def generate_otp(num_digits: int = 6) -> str:
     return "".join(secrets.choice("0123456789") for _ in range(num_digits))
 

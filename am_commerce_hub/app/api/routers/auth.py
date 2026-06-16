@@ -1,4 +1,4 @@
-"""認証API: ログイン → 二段階認証 → トークン、管理者によるアカウント発行。"""
+﻿"""??API: ???? ? ????? ? ???????????????????"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -39,7 +39,7 @@ class ChangePasswordBody(BaseModel):
 
 @router.post("/login")
 def login(body: LoginBody):
-    """第1段階: メール＋パスワード → 二段階認証コードを送信。"""
+    """?1??: ????????? ? ????????????"""
     try:
         with session_scope() as s:
             return auth_service.start_login(s, email=body.email, password=body.password)
@@ -49,7 +49,7 @@ def login(body: LoginBody):
 
 @router.post("/verify")
 def verify(body: VerifyBody):
-    """第2段階: 認証コード検証 → アクセストークン発行。"""
+    """?2??: ??????? ? ???????????"""
     try:
         with session_scope() as s:
             return auth_service.verify_login(s, challenge_id=body.challenge_id, code=body.code)
@@ -59,7 +59,7 @@ def verify(body: VerifyBody):
 
 @router.post("/users", status_code=201)
 def create_user(body: CreateUserBody, _=Depends(require_roles(Role.ADMIN))):
-    """管理者のみ: アカウント発行。"""
+    """?????: ????????"""
     try:
         with session_scope() as s:
             user = auth_service.create_user(

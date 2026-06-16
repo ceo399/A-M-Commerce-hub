@@ -1,8 +1,8 @@
-"""unified inventory ledger (replace InventoryItem/InventoryMovement)
+﻿"""unified inventory ledger (replace InventoryItem/InventoryMovement)
 
-旧 inventory_items / inventory_movements を廃し、ロケーション×所有状態の
-単一台帳 stock_movements + 突合用 inventory_snapshots に置換する。
-products に reorder_point を追加。SQLite/PostgreSQL 両対応。
+? inventory_items / inventory_movements ????????????????
+???? stock_movements + ??? inventory_snapshots ??????
+products ? reorder_point ????SQLite/PostgreSQL ????
 
 Revision ID: b2c3d4e5f6a7
 Revises: 7de3e6dbe2d9
@@ -27,11 +27,11 @@ INV_STATES = (
 
 
 def _inv_enum(is_pg: bool):
-    # PG: 型生成はマイグレーションが明示的に1回だけ行うため、列では生成させない。
-    #     sa.Enum の create_type=False は PG に伝わらないので postgresql.ENUM を使う。
+    # PG: ?????????????????1??????????????????
+    #     sa.Enum ? create_type=False ? PG ???????? postgresql.ENUM ????
     if is_pg:
         return postgresql.ENUM(*INV_STATES, name="inventorystate", create_type=False)
-    # SQLite 等: VARCHAR(+CHECK) として扱う
+    # SQLite ?: VARCHAR(+CHECK) ?????
     return sa.Enum(*INV_STATES, name="inventorystate")
 
 
@@ -39,21 +39,21 @@ def upgrade() -> None:
     bind = op.get_bind()
     is_pg = bind.dialect.name == "postgresql"
 
-    # --- 旧在庫テーブルを廃止 ---
+    # --- ?????????? ---
     op.drop_table("inventory_movements")
     op.drop_table("inventory_items")
     if is_pg:
         op.execute("DROP TYPE IF EXISTS movementtype")
 
-    # --- products に発注点を追加 ---
+    # --- products ??????? ---
     with op.batch_alter_table("products") as batch:
         batch.add_column(sa.Column("reorder_point", sa.Integer(), nullable=False, server_default="0"))
 
-    # --- PG では enum 型を先に1回だけ作成（列側では create させない） ---
+    # --- PG ?? enum ????1?????????? create ????? ---
     if is_pg:
         postgresql.ENUM(*INV_STATES, name="inventorystate").create(bind, checkfirst=True)
 
-    # --- 単一台帳 ---
+    # --- ???? ---
     op.create_table(
         "stock_movements",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -74,7 +74,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_stock_movements_product_id", "stock_movements", ["product_id"])
 
-    # --- 突合用スナップショット ---
+    # --- ??????????? ---
     op.create_table(
         "inventory_snapshots",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -104,7 +104,7 @@ def downgrade() -> None:
     with op.batch_alter_table("products") as batch:
         batch.drop_column("reorder_point")
 
-    # 旧テーブルを復元
+    # ????????
     movementtype = sa.Enum("inbound", "allocate", "release", "outbound", "adjust", name="movementtype")
     op.create_table(
         "inventory_items",

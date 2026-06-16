@@ -1,9 +1,9 @@
-"""他チャネル取り込みサービス。
+﻿"""??????????????
 
-- メールPDF注文: AI抽出結果(信頼度付き)を受け、高信頼のみ SellerOrder へコミット。
-  低信頼は自動コミットせず保留情報を返す（永続的な例外キューは次段で追加）。
-- Excel在庫表: 棚卸カウントを読み、自社倉庫の引当可能在庫を実数へ合わせる(adjust)。
-外部からの取得（メール受信 / Drive・Chat添付）は配信層の責務で、ここは取り込みに専念する。
+- ???PDF??: AI????(?????)????????? SellerOrder ??????
+  ?????????????????????????????????????
+- Excel???: ?????????????????????????????(adjust)?
+????????????? / Drive?Chat?????????????????????????
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def _resolve_product(session: Session, sku: str | None, asin: str | None) -> Pro
 
 def ingest_order_document(session: Session, source: str, integ: Integrations | None = None,
                           threshold: float = DEFAULT_CONFIDENCE_THRESHOLD) -> dict:
-    """メールPDF注文を取り込む。高信頼のみコミット、低信頼は保留(committed=False)。"""
+    """???PDF????????????????????????(committed=False)?"""
     integ = get_integrations(integ)
     doc = integ.order_doc.parse(source)
     if doc.confidence < threshold:
@@ -54,14 +54,14 @@ def ingest_order_document(session: Session, source: str, integ: Integrations | N
             sku=ln.sku, asin=ln.asin, quantity=ln.quantity, item_price=ln.unit_price,
         ))
     session.flush()
-    seller_service._apply_order_to_ledger(session, so)  # MFNなら自社在庫を引当
+    seller_service._apply_order_to_ledger(session, so)  # MFN?????????
     return {"committed": True, "order_id": order_id, "seller_order_id": so.id,
             "confidence": doc.confidence, "lines": len(doc.lines)}
 
 
 def ingest_inventory_count(session: Session, source: str,
                            integ: Integrations | None = None) -> dict:
-    """Excel在庫表の棚卸カウントを取り込み、自社倉庫の引当可能在庫を実数へ合わせる。"""
+    """Excel????????????????????????????????????"""
     integ = get_integrations(integ)
     updated = 0
     skipped = 0
@@ -75,7 +75,7 @@ def ingest_inventory_count(session: Session, source: str,
         delta = row.quantity - bal.available
         if delta != 0:
             inventory_service.adjust(session, product.id, delta, ref_type="inventory_count",
-                                     source_system="excel_upload", note="Excel棚卸反映")
+                                     source_system="excel_upload", note="Excel????")
             adjustments.append({"product_id": product.id, "sku": row.sku,
                                 "delta": delta, "to": row.quantity})
         updated += 1

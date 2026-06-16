@@ -1,12 +1,12 @@
-"""リトライ／バックオフ／レート制御つきの堅牢なHTTPクライアント。
+﻿"""??????????????????????HTTP???????
 
-Amazonの各API（SP-API / Ads API）共通の横断機能をここに集約する:
-- 429 / 5xx / ネットワークエラーは指数バックオフ＋ジッタで再試行
-- Retry-After ヘッダがあれば優先して待機
-- クライアント側トークンバケットで事前スロットリング
-- 4xx（429以外）は即エラー（再試行しない）
+Amazon??API?SP-API / Ads API????????????????:
+- 429 / 5xx / ?????????????????????????
+- Retry-After ?????????????
+- ?????????????????????????
+- 4xx?429????????????????
 
-テスト容易性のため、httpxの transport と sleep を注入できる。
+??????????httpx? transport ? sleep ???????
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import httpx
 
 
 class AmazonApiError(Exception):
-    """APIが返したエラー（再試行しても解消しない4xxなど）。"""
+    """API???????????????????4xx????"""
     def __init__(self, status_code: int, message: str, body: str | None = None):
         super().__init__(f"[{status_code}] {message}")
         self.status_code = status_code
@@ -27,11 +27,11 @@ class AmazonApiError(Exception):
 
 
 class TransientError(Exception):
-    """再試行を尽くしても回復しなかった一時的障害（429/5xx/ネットワーク）。"""
+    """??????????????????????429/5xx/????????"""
 
 
 class RateLimiter:
-    """トークンバケット。rate_per_sec で補充、burst まで貯められる。"""
+    """?????????rate_per_sec ????burst ????????"""
     def __init__(self, rate_per_sec: float, burst: int | None = None,
                  clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep):
@@ -76,7 +76,7 @@ class ResilientHttpClient:
         if retry_after is not None:
             return retry_after
         cap = min(self.backoff_max, self.backoff_base * (2 ** attempt))
-        return cap * (0.5 + random.random() * 0.5)  # フルジッタ寄り
+        return cap * (0.5 + random.random() * 0.5)  # ???????
 
     @staticmethod
     def _retry_after(resp: httpx.Response) -> float | None:
@@ -95,7 +95,7 @@ class ResilientHttpClient:
                 self.rate_limiter.acquire()
             try:
                 resp = self._client.request(method, path, headers=headers, **kw)
-            except httpx.TransportError as e:  # 接続/タイムアウト等
+            except httpx.TransportError as e:  # ??/???????
                 last_exc = e
                 if attempt < self.max_retries:
                     self._sleep(self._backoff(attempt, None))
@@ -108,11 +108,11 @@ class ResilientHttpClient:
                     continue
                 raise TransientError(f"giving up after {attempt+1} tries (status={resp.status_code})")
 
-            if resp.status_code >= 400:  # 429以外の4xxは再試行しない
+            if resp.status_code >= 400:  # 429???4xx???????
                 raise AmazonApiError(resp.status_code, resp.reason_phrase, resp.text)
 
             return resp
-        # 到達しない想定
+        # ???????
         raise TransientError(str(last_exc) if last_exc else "unknown error")
 
     def get(self, path: str, **kw) -> httpx.Response:

@@ -1,8 +1,8 @@
-"""認証サービス。
+﻿"""???????
 
-- 管理者によるアカウント発行
-- ログイン（メール＋パスワード → 二段階認証コード送信）
-- 二段階認証コード検証 → アクセストークン発行
+- ?????????????
+- ?????????????? ? ???????????
+- ?????????? ? ??????????
 """
 from __future__ import annotations
 
@@ -23,19 +23,19 @@ log = get_logger("amhub.auth")
 
 
 class AuthError(Exception):
-    """認証関連の汎用エラー（呼び出し側で401/400へ変換）。"""
+    """?????????????????401/400?????"""
 
 
-# ---- 管理者によるアカウント発行 ----
+# ---- ????????????? ----
 def create_user(session: Session, *, email: str, password: str, full_name: str | None = None,
                 roles: list[Role], phone: str | None = None,
                 two_factor_method: TwoFactorMethod = TwoFactorMethod.EMAIL,
                 is_admin: bool = False) -> User:
     if session.scalar(select(User).where(User.email == email)):
-        raise AuthError("このメールアドレスは既に登録されています")
+        raise AuthError("????????????????????")
     role_values = sorted({r.value for r in roles} | ({Role.ADMIN.value} if is_admin else set()))
     if two_factor_method == TwoFactorMethod.SMS and not phone:
-        raise AuthError("SMS二段階認証には電話番号が必要です")
+        raise AuthError("SMS????????????????")
     user = User(
         email=email, full_name=full_name,
         password_hash=security.hash_password(password),
@@ -47,14 +47,14 @@ def create_user(session: Session, *, email: str, password: str, full_name: str |
     return user
 
 
-# ---- ログイン（第1段階: パスワード検証 → OTP送信） ----
+# ---- ??????1??: ??????? ? OTP??? ----
 def start_login(session: Session, *, email: str, password: str,
                 integ: Integrations | None = None) -> dict:
     integ = get_integrations(integ)
     user = session.scalar(select(User).where(User.email == email))
-    # ユーザー不在でもパスワード検証相当の時間を使い、存在を秘匿
+    # ?????????????????????????????
     if user is None or not user.is_active or not security.verify_password(password, user.password_hash):
-        raise AuthError("メールアドレスまたはパスワードが正しくありません")
+        raise AuthError("????????????????????????")
 
     code = security.generate_otp()
     challenge = LoginChallenge(
@@ -74,31 +74,31 @@ def start_login(session: Session, *, email: str, password: str,
     out = {"challenge_id": challenge.challenge_uid,
            "method": user.two_factor_method.value,
            "destination_hint": masked}
-    # 開発確認用: モック時のみOTPを応答に含める（本番では絶対に出力しない）
+    # ?????: ??????OTP?????????????????????
     if settings.dev_echo_otp and settings.use_mock():
         out["dev_code"] = code
-        out["dev_note"] = "開発確認用の表示です。本番(live)では出力されません。"
+        out["dev_note"] = "?????????????(live)??????????"
     return out
 
 
-# ---- ログイン（第2段階: OTP検証 → トークン発行） ----
+# ---- ??????2??: OTP?? ? ??????? ----
 def verify_login(session: Session, *, challenge_id: str, code: str) -> dict:
     challenge = session.scalar(
         select(LoginChallenge).where(LoginChallenge.challenge_uid == challenge_id)
     )
     if challenge is None or challenge.consumed:
-        raise AuthError("無効な認証セッションです。最初からやり直してください")
+        raise AuthError("??????????????????????????")
     expires_at = challenge.expires_at
-    if expires_at.tzinfo is None:  # SQLiteはtz情報を保持しないためUTC扱いに正規化
+    if expires_at.tzinfo is None:  # SQLite?tz??????????UTC??????
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if utcnow() > expires_at:
-        raise AuthError("認証コードの有効期限が切れました")
+        raise AuthError("????????????????")
     if challenge.attempts >= settings.otp_max_attempts:
-        raise AuthError("試行回数の上限に達しました。最初からやり直してください")
+        raise AuthError("???????????????????????????")
 
     challenge.attempts += 1
     if not security.verify_otp(code, challenge.code_hash):
-        raise AuthError("認証コードが正しくありません")
+        raise AuthError("??????????????")
 
     challenge.consumed = True
     user = session.get(User, challenge.user_id)
@@ -114,7 +114,7 @@ def change_password(session: Session, *, user: User, new_password: str) -> None:
 
 
 def _mask(value: str) -> str:
-    """送信先のヒント表示（メール/電話を伏字化）。"""
+    """?????????????/????????"""
     if "@" in value:
         name, _, domain = value.partition("@")
         head = name[:2]

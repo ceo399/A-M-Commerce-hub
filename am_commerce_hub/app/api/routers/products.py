@@ -1,4 +1,4 @@
-"""商品マスタ API。"""
+﻿"""????? API?"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -55,7 +55,7 @@ def get_product(product_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         p = s.get(Product, product_id)
         if p is None:
-            raise HTTPException(404, "商品が見つかりません")
+            raise HTTPException(404, "??????????")
         return ser.product_dict(p)
 
 
@@ -63,7 +63,7 @@ def get_product(product_id: int, _=Depends(get_current_user)):
 def create_product(body: ProductBody, _=Depends(require_roles(Role.MERCHANDISING))):
     with session_scope() as s:
         if s.scalar(select(Product).where(Product.sku == body.sku)):
-            raise HTTPException(400, "同じSKUが既に存在します")
+            raise HTTPException(400, "??SKU????????")
         p = Product(**body.model_dump())
         s.add(p); s.flush()
         return ser.product_dict(p)
@@ -75,7 +75,7 @@ def update_product(product_id: int, body: ProductPatch,
     with session_scope() as s:
         p = s.get(Product, product_id)
         if p is None:
-            raise HTTPException(404, "商品が見つかりません")
+            raise HTTPException(404, "??????????")
         for k, v in body.model_dump(exclude_unset=True).items():
             setattr(p, k, v)
         s.flush()

@@ -1,7 +1,7 @@
-"""LWA（Login with Amazon）OAuth2 トークン管理。
+﻿"""LWA?Login with Amazon?OAuth2 ???????
 
-SP-API / Ads API 共通。refresh_token から access_token を取得し、
-有効期限まで（安全マージン付きで）キャッシュ、期限が近づいたら自動更新する。
+SP-API / Ads API ???refresh_token ?? access_token ?????
+??????????????????????????????????????
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class LwaTokenManager:
                  http: ResilientHttpClient | None = None,
                  clock=time.time):
         if not (client_id and client_secret and refresh_token):
-            raise ValueError("LWA資格情報（client_id / client_secret / refresh_token）が未設定です")
+            raise ValueError("LWA?????client_id / client_secret / refresh_token???????")
         self.client_id = client_id
         self.client_secret = client_secret
         self.refresh_token = refresh_token

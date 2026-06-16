@@ -1,4 +1,4 @@
-"""メーカー発注 API。"""
+﻿"""?????? API?"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -29,17 +29,17 @@ def get_supplier_po(spo_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         spo = s.get(SupplierPurchaseOrder, spo_id)
         if spo is None:
-            raise HTTPException(404, "発注が見つかりません")
+            raise HTTPException(404, "??????????")
         return ser.supplier_po_dict(spo)
 
 
 @router.post("/{spo_id}/receive")
 def receive_goods(spo_id: int, _=Depends(require_roles(Role.PURCHASING, Role.LOGISTICS))):
-    """メーカー入荷・検品完了 → 在庫へ入庫。承認済みの発注のみ。"""
+    """??????????? ? ????????????????"""
     with session_scope() as s:
         spo = s.get(SupplierPurchaseOrder, spo_id)
         if spo is None:
-            raise HTTPException(404, "発注が見つかりません")
+            raise HTTPException(404, "??????????")
         try:
             spo = purchasing_service.receive_goods(s, spo_id)
         except ValueError as e:

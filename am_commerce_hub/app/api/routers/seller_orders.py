@@ -1,4 +1,4 @@
-"""3P受注(Seller Central: FBA / 自社出荷) API。1PのPurchaseOrderとは別物。"""
+﻿"""3P??(Seller Central: FBA / ????) API?1P?PurchaseOrder?????"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,5 +25,5 @@ def get_seller_order(order_id: int, _=Depends(get_current_user)):
     with session_scope() as s:
         so = s.get(SellerOrder, order_id)
         if so is None:
-            raise HTTPException(404, "3P受注が見つかりません")
+            raise HTTPException(404, "3P??????????")
         return ser.seller_order_dict(so, with_lines=True)

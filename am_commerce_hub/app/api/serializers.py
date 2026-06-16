@@ -1,7 +1,7 @@
-"""モデル → 辞書のシリアライザと、ページネーション補助。
+﻿"""??? ? ??????????????????????
 
-レスポンスは辞書で返す（OpenAPIの厳密な型付けより記述量を優先）。
-セッションが開いている間に呼ぶこと（リレーション参照のため）。
+????????????OpenAPI?????????????????
+???????????????????????????????
 """
 from __future__ import annotations
 
@@ -22,12 +22,12 @@ def product_dict(p) -> dict:
         "status": p.status.value, "list_price": _num(p.list_price),
         "cost_price": _num(p.cost_price), "spec": p.spec or {},
         "reorder_point": p.reorder_point,
-        "stock": None,  # 在庫は /inventory/{product_id} で取得（台帳から導出）
+        "stock": None,  # ??? /inventory/{product_id} ???????????
     }
 
 
 def inventory_dict(bal, product=None) -> dict:
-    """StockBalance（台帳から導出した残高）を辞書化。"""
+    """StockBalance?????????????????"""
     return {"product_id": bal.product_id,
             "on_hand": bal.on_hand, "allocated": bal.allocated,
             "available": bal.available, "reorder_point": bal.reorder_point,
@@ -61,7 +61,7 @@ def order_dict(po, with_lines: bool = False) -> dict:
 
 
 def seller_order_dict(so, with_lines: bool = False) -> dict:
-    """3P受注(SellerOrder)。合計金額 = Σ(単価×数量)。"""
+    """3P??(SellerOrder)????? = ?(?????)?"""
     total = sum(float(l.item_price or 0) * l.quantity for l in so.lines)
     d = {"id": so.id, "amazon_order_id": so.amazon_order_id,
          "purchase_date": so.purchase_date.isoformat() if so.purchase_date else None,
@@ -112,7 +112,7 @@ def approval_dict(t) -> dict:
 
 def paginate(session: Session, stmt, limit: int, offset: int,
              serializer) -> dict[str, Any]:
-    """件数つきページネーション。{items, total, limit, offset} を返す。"""
+    """?????????????{items, total, limit, offset} ????"""
     total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     items = session.scalars(stmt.limit(limit).offset(offset)).all()
     return {"items": [serializer(x) for x in items],

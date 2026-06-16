@@ -1,10 +1,10 @@
-"""受注サービス（フロー2）。
+﻿"""??????????2??
 
-Amazonベンダーセントラル → Vendor Orders API でPO受信
- → 自社在庫DBと自動照合
-    ├ 引当可能 → 即納可能リスト → PO Ack → 日次出荷承認 → ピックアップ&梱包
-    └ 在庫不足 → バックオーダー回答 → メーカー発注（purchasing_service）
- → AISハブへ出荷CSV → ASN送信 → Invoice送信 → 自社DB更新
+Amazon????????? ? Vendor Orders API ?PO??
+ ? ????DB?????
+    ? ???? ? ??????? ? PO Ack ? ?????? ? ??????&??
+    ? ???? ? ????????? ? ???????purchasing_service?
+ ? AIS?????CSV ? ASN?? ? Invoice?? ? ??DB??
 """
 from __future__ import annotations
 
@@ -24,20 +24,20 @@ from app.services import approval_service, inventory_service, purchasing_service
 
 
 def ingest_new_pos(session: Session, integ: Integrations | None = None) -> list[PurchaseOrder]:
-    """Vendor APIから新規POを取り込み、在庫照合まで実行。"""
+    """Vendor API????PO???????????????"""
     integ = get_integrations(integ)
     created: list[PurchaseOrder] = []
     for inc in integ.vendor.fetch_new_pos():
         if session.scalar(select(PurchaseOrder).where(
                 PurchaseOrder.amazon_po_number == inc.amazon_po_number)):
-            continue  # 重複取り込み防止
+            continue  # ????????
         po = PurchaseOrder(amazon_po_number=inc.amazon_po_number, ship_to=inc.ship_to)
         session.add(po)
         session.flush()
         for line in inc.lines:
             product = session.scalar(select(Product).where(Product.sku == line.sku))
             if product is None:
-                # マスタ未登録のSKUはスキップ（カタログ取り込みで先に登録される想定）
+                # ???????SKU?????????????????????????
                 continue
             session.add(OrderLine(
                 order_id=po.id, product_id=product.id,
@@ -50,7 +50,7 @@ def ingest_new_pos(session: Session, integ: Integrations | None = None) -> list[
 
 
 def _match_inventory(session: Session, po: PurchaseOrder, integ: Integrations) -> None:
-    """自社在庫DBと自動照合。引当可能分とバックオーダー分に振り分ける。"""
+    """????DB???????????????????????????"""
     po.status = OrderStatus.MATCHING
     confirmed: dict[str, int] = {}
     has_backorder = False
@@ -64,37 +64,37 @@ def _match_inventory(session: Session, po: PurchaseOrder, integ: Integrations) -
         line.qty_backordered = line.qty_ordered - allocated
         confirmed[product.sku] = allocated
 
-        # 即納分があれば出荷対象（ALLOCATED）、無ければバックオーダー
+        # ????????????ALLOCATED?????????????
         line.status = (OrderLineStatus.ALLOCATED if line.qty_confirmed > 0
                        else OrderLineStatus.BACKORDERED)
 
         if line.qty_backordered > 0:
             has_backorder = True
-            # 在庫不足分 → メーカー発注書を自動作成（承認待ち）
+            # ????? ? ??????????????????
             purchasing_service.create_supplier_po(
                 session, product=product, quantity=line.qty_backordered, order_line=line
             )
 
-    # PO Acknowledgement（即納可能数を回答）
+    # PO Acknowledgement??????????
     integ.vendor.acknowledge_po(po.amazon_po_number, confirmed)
 
     po.status = (OrderStatus.PARTIALLY_BACKORDERED if has_backorder
                  else OrderStatus.READY_TO_SHIP)
 
-    # 引当可能分があれば、物流責任者の日次出荷承認タスクを起票
+    # ????????????????????????????
     if any(l.status == OrderLineStatus.ALLOCATED for l in po.lines):
         approval_service.create_task(
             session, ApprovalType.DAILY_SHIPMENT, ref_type="purchase_order",
-            ref_id=po.id, summary=f"{po.amazon_po_number} の即納分 出荷承認",
+            ref_id=po.id, summary=f"{po.amazon_po_number} ???? ????",
         )
 
 
 def confirm_shipment(session: Session, po_id: int, integ: Integrations | None = None) -> PurchaseOrder:
-    """出荷承認後: ピックアップ&梱包 → AISハブ送信 → ASN → Invoice。"""
+    """?????: ??????&?? ? AIS???? ? ASN ? Invoice?"""
     integ = get_integrations(integ)
     po = session.get(PurchaseOrder, po_id)
     if po is None:
-        raise ValueError(f"PurchaseOrder {po_id} が見つかりません")
+        raise ValueError(f"PurchaseOrder {po_id} ????????")
 
     ship_lines: dict[str, int] = {}
     total_amount = 0.0
@@ -114,15 +114,15 @@ def confirm_shipment(session: Session, po_id: int, integ: Integrations | None = 
                          "qty": line.qty_confirmed, "amount": amount})
 
     if not ship_lines:
-        return po  # 出荷可能行なし
+        return po  # ???????
 
-    # AISハブへ出荷CSV送信（SFTP）
+    # AIS?????CSV???SFTP?
     integ.shipping_hub.send_shipment_csv(po.amazon_po_number, csv_rows)
     po.status = OrderStatus.PACKED
-    # ASN送信
+    # ASN??
     po.asn_id = integ.vendor.send_asn(po.amazon_po_number, ship_lines)
     po.status = OrderStatus.SHIPPED
-    # Invoice送信
+    # Invoice??
     po.invoice_id = integ.vendor.send_invoice(po.amazon_po_number, total_amount)
     po.status = OrderStatus.INVOICED
     return po
