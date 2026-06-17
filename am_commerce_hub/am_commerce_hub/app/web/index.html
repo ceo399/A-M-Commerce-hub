@@ -1,1 +1,73 @@
-﻿<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A&M Commerce Hub — v2</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><script src="https://unpkg.com/react@18/umd/react.production.min.js"></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><style>:root{--sans:"Noto Sans JP",sans-serif}body{font-family:var(--sans);background:#f3f1ea;color:#26241f;margin:0;padding:0}.container{max-width:1400px;margin:0 auto;padding:20px}.header{font-size:28px;font-weight:700;margin-bottom:20px}.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}.kpi-card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px}.kpi-label{font-size:12px;color:#999;text-transform:uppercase}.kpi-value{font-size:32px;font-weight:700;color:#8a6c16;margin-top:8px}.panel{background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:24px}.panel-title{font-size:18px;font-weight:700;margin-bottom:16px}.table{width:100%;border-collapse:collapse;font-size:13px}.table th{background:#f7f5ef;padding:12px;text-align:left;font-weight:600;border-bottom:1px solid #ddd}.table td{padding:12px;border-bottom:1px solid #ddd}.table tr:hover{background:#f7f5ef}.btn{padding:8px 16px;background:#8a6c16;color:#fff;border:0;border-radius:4px;cursor:pointer;font-family:inherit}.btn:hover{opacity:.9}.loading{text-align:center;padding:40px;color:#999}</style></head><body><div id="root"></div><script type="text/babel">const{useState,useEffect}=React;function Dashboard(){const[kpi,setKpi]=useState(null);const[suggestions,setSuggestions]=useState([]);const[analysis,setAnalysis]=useState([]);const[loading,setLoading]=useState(true);useEffect(()=>{fetchData()},[]);const fetchData=async()=>{try{setLoading(true);const kpiRes=await fetch("/api/dashboard/kpi");if(kpiRes.ok)setKpi(await kpiRes.json());const aiRes=await fetch("/api/dashboard/ai-analysis",{method:"POST"});if(aiRes.ok){const data=await aiRes.json();setSuggestions(data.suggestions||[])}const contentRes=await fetch("/api/dashboard/content-analysis");if(contentRes.ok){const data=await contentRes.json();setAnalysis(data.analyses||[])}}catch(e){console.error(e)}finally{setLoading(false)}};if(loading)return React.createElement("div",{className:"loading"},"読み込み中...");return React.createElement("div",{className:"container"},React.createElement("div",{className:"header"},"📊 A&M Commerce Hub — v2"),React.createElement("div",{className:"kpi-grid"},kpi&&React.createElement(React.Fragment,null,React.createElement("div",{className:"kpi-card"},React.createElement("div",{className:"kpi-label"},"売上"),React.createElement("div",{className:"kpi-value"},"¥"+(kpi.total_sales||0).toLocaleString())),React.createElement("div",{className:"kpi-card"},React.createElement("div",{className:"kpi-label"},"ROAS"),React.createElement("div",{className:"kpi-value"},(kpi.roas||0).toFixed(2)+"x")),React.createElement("div",{className:"kpi-card"},React.createElement("div",{className:"kpi-label"},"Active ASIN"),React.createElement("div",{className:"kpi-value"},kpi.active_asin_count||0)),React.createElement("div",{className:"kpi-card"},React.createElement("div",{className:"kpi-label"},"粗利率"),React.createElement("div",{className:"kpi-value"},(kpi.gross_margin_percent||0).toFixed(1)+"%")))),React.createElement("div",{className:"panel"},React.createElement("div",{className:"panel-title"},"🤖 Claude AI 提案"),suggestions.length>0?React.createElement("table",{className:"table"},React.createElement("thead",null,React.createElement("tr",null,React.createElement("th",null,"ASIN"),React.createElement("th",null,"商品名"),React.createElement("th",null,"診断"),React.createElement("th",null,"推奨アクション"))),React.createElement("tbody",null,suggestions.map((s,i)=>React.createElement("tr",{key:i},React.createElement("td",null,s.asin?.slice(-6)),React.createElement("td",null,s.product_name?.slice(0,25)),React.createElement("td",null,s.diagnosis?.slice(0,20)),React.createElement("td",null,s.recommended_action?.slice(0,30)))))):React.createElement("p",null,"データ取得中...")),React.createElement("div",{className:"panel"},React.createElement("div",{className:"panel-title"},"🎬 コンテンツ品質分析"),analysis.length>0?React.createElement("table",{className:"table"},React.createElement("thead",null,React.createElement("tr",null,React.createElement("th",null,"ASIN"),React.createElement("th",null,"スコア"),React.createElement("th",null,"画像"),React.createElement("th",null,"動画"),React.createElement("th",null,"A+"))),React.createElement("tbody",null,analysis.map((a,i)=>React.createElement("tr",{key:i},React.createElement("td",null,a.asin?.slice(-6)),React.createElement("td",null,(a.overall_quality_score*100).toFixed(0)+"%"),React.createElement("td",null,a.image_count),React.createElement("td",null,a.has_video?"✓":"−"),React.createElement("td",null,a.has_aplus?"✓":"−"))))):React.createElement("p",null,"データ取得中...")),React.createElement("div",{style:{textAlign:"center",marginTop:"40px",paddingTop:"20px",borderTop:"1px solid #ddd",color:"#999"}},React.createElement("p",null,"A&M Commerce Hub v2.0 — Claude API 統合版"),React.createElement("button",{className:"btn",onClick:fetchData},"🔄 更新")))}ReactDOM.render(React.createElement(Dashboard),document.getElementById("root"))</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A&M Commerce Hub — v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--sans:"Noto Sans JP",sans-serif;--gold:#8a6c16;--bg:#f3f1ea;--ink:#26241f}
+  *{box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);margin:0}
+  .container{max-width:1400px;margin:0 auto;padding:20px}
+  .header{font-size:28px;font-weight:700;margin:8px 0 20px}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;border-bottom:2px solid #ddd;margin-bottom:24px}
+  .tab{padding:12px 18px;background:transparent;border:0;border-bottom:3px solid transparent;
+       cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:#777;margin-bottom:-2px}
+  .tab:hover{color:var(--gold)}
+  .tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+  .panel{background:#fff;border:1px solid #ddd;border-radius:8px;padding:32px;min-height:320px}
+  .panel-title{font-size:20px;font-weight:700;margin:0 0 8px}
+  .panel-sub{color:#999;font-size:13px;margin:0 0 28px}
+  .placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;
+               padding:60px 20px;color:#b3a98f;border:2px dashed #e2dcc9;border-radius:8px}
+  .placeholder .icon{font-size:40px;margin-bottom:12px}
+  .placeholder .badge{font-size:13px;font-weight:600;color:var(--gold);
+                      background:#f7f1df;border-radius:999px;padding:6px 16px;margin-top:14px}
+  .footer{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid #ddd;color:#999;font-size:13px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">📊 A&M Commerce Hub — v2</div>
+  <div class="tabs" id="tabs"></div>
+  <div id="content"></div>
+  <div class="footer">A&M Commerce Hub v2.0 — 基盤起動済み（各機能は順次実装）</div>
+</div>
+<script>
+  const TABS = [
+    {key:"sales-ads",   icon:"💰", title:"売上 × 広告",          sub:"売上・ROAS・広告パフォーマンスの統合ビュー"},
+    {key:"reg-report",  icon:"📋", title:"登録状態レポート",      sub:"商品の出品・カタログ登録ステータス一覧"},
+    {key:"forecast-po", icon:"📦", title:"発注予測 + 発注書",     sub:"需要予測にもとづく発注提案と発注書発行"},
+    {key:"seo-crawl",   icon:"🔍", title:"SEOクロール + 修正",    sub:"リスティングのSEO診断と改善提案"},
+    {key:"lifecycle",   icon:"♻️", title:"製品ライフサイクル管理", sub:"商品の登録から終売までのライフサイクル"},
+  ];
+  let active = TABS[0].key;
+  const tabsEl = document.getElementById("tabs");
+  const contentEl = document.getElementById("content");
+
+  function render(){
+    tabsEl.innerHTML = "";
+    TABS.forEach(t=>{
+      const b = document.createElement("button");
+      b.className = "tab" + (t.key===active ? " active" : "");
+      b.textContent = t.icon + " " + t.title;
+      b.onclick = ()=>{ active = t.key; render(); };
+      tabsEl.appendChild(b);
+    });
+    const t = TABS.find(x=>x.key===active);
+    contentEl.innerHTML =
+      '<div class="panel">' +
+        '<h2 class="panel-title">'+t.icon+' '+t.title+'</h2>' +
+        '<p class="panel-sub">'+t.sub+'</p>' +
+        '<div class="placeholder">' +
+          '<div class="icon">'+t.icon+'</div>' +
+          '<div>このタブの機能は現在準備中です</div>' +
+          '<div class="badge">🚧 準備中</div>' +
+        '</div>' +
+      '</div>';
+  }
+  render();
+</script>
+</body>
+</html>

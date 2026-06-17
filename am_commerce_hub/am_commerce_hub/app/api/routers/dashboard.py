@@ -1,11 +1,11 @@
-﻿"""??????? v2 API"""
+﻿"""Dashboard v2 API"""
 from __future__ import annotations
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func
 from pydantic import BaseModel
 from app.api.deps import get_current_user
-from app.db.models import Product, Order, OrderStatus, AdMetricSnapshot
+from app.db.models import Product, PurchaseOrder as Order, OrderStatus, AdMetricSnapshot
 from app.db.session import session_scope
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -24,10 +24,14 @@ def get_kpi_dashboard(_=Depends(get_current_user)):
     with session_scope() as s:
         today = date.today()
         orders = s.scalars(select(Order).where(Order.status.in_([
-            OrderStatus.READY_TO_SHIP, OrderStatus.SHIPPED, 
+            OrderStatus.READY_TO_SHIP, OrderStatus.SHIPPED,
             OrderStatus.INVOICED, OrderStatus.CLOSED
         ]))).all()
-        total_sales = sum(float(o.total_price or 0) for o in orders)
+        # PurchaseOrder has no total_price column; derive it from order lines.
+        total_sales = sum(
+            float(line.unit_price or 0) * (line.qty_ordered or 0)
+            for o in orders for line in o.lines
+        )
         gross_profit = total_sales * 0.24
         metrics = s.scalars(select(func.sum(AdMetricSnapshot.spend)).where(
             AdMetricSnapshot.report_date == today)).first() or 0
