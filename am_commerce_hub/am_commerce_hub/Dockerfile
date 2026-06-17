@@ -16,7 +16,9 @@ COPY . .
 RUN grep -q 'create_type=False' migrations/versions/b2c3d4e5f6a7_unified_inventory_ledger.py || (echo FIX_MISSING && exit 1)
 
 # エントリポイントへ実行権限を付与し、非rootユーザーで実行
-RUN chmod +x docker/entrypoint.sh \
+# (Windows由来のCRLFが混入しても起動できるよう、ビルド時にLFへ正規化)
+RUN sed -i 's/\r$//' docker/entrypoint.sh \
+    && chmod +x docker/entrypoint.sh \
     && useradd -m appuser \
     && chown -R appuser:appuser /app
 USER appuser

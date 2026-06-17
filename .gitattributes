@@ -1,0 +1,4 @@
+# Force LF line endings for shell scripts (prevents "no such file or directory"
+# when running entrypoint.sh inside Linux containers built on Windows).
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
